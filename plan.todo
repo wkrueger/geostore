@@ -1,0 +1,14 @@
+Schema:
+  - Table name
+  - Indexes
+  - Filters
+  - .map template
+  - Version
+
+Outputs:
+  - gpkg importer (API and route)
+  - feature query (API and route)
+  - .map writer (API)
+
+Must have:
+  - swagger
