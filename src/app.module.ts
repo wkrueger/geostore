@@ -1,11 +1,17 @@
-import { Module } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { getContext } from './contexts/getContext';
-import { Store } from './entities/store/StoreEntity';
-import { Operation } from './entities/operation/OperationEntity';
-import { Media } from './entities/media/MediaEntity';
 import { Dataset } from './entities/dataset/DatasetEntity';
+import { Media } from './entities/media/MediaEntity';
+import { Operation } from './entities/operation/OperationEntity';
 import { StoreController } from './entities/store/StoreController';
+import { Store } from './entities/store/StoreEntity';
+import { MediaService } from './entities/media/MediaService';
 
 const ctx = getContext();
 
@@ -25,4 +31,12 @@ const ctx = getContext();
   controllers: [StoreController],
   providers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  constructor(private mediaService: MediaService) {}
+
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(this.mediaService.createMulterMiddleware())
+      .forRoutes({ path: 'datasets', method: RequestMethod.POST });
+  }
+}

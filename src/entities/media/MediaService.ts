@@ -6,6 +6,7 @@ import mkdirp from 'mkdirp';
 import mime from 'mime';
 import { error } from 'src/_other/error';
 import util from 'util';
+import multer from 'multer';
 
 @Injectable()
 export class MediaService {
@@ -45,5 +46,33 @@ export class MediaService {
     );
 
     await found.remove();
+  }
+
+  createMulterStorage() {
+    const that = this;
+    return {
+      async _handleFile(req: Request, file, cb) {
+        try {
+          await that.create({
+            stream: file.stream,
+            ctype: req.headers['content-type']!,
+          });
+          cb(null);
+        } catch (err) {
+          cb(err);
+        }
+      },
+
+      async _removeFile() {
+        throw Error('not expected');
+      },
+    };
+  }
+
+  middleware = multer({ storage: this.createMulterStorage() }).single('file');
+  createMulterMiddleware() {
+    return (req, res, next) => {
+      return this.middleware(req, res, next);
+    };
   }
 }
