@@ -29,7 +29,7 @@ const ctx = getContext();
     }),
   ],
   controllers: [StoreController],
-  providers: [],
+  providers: [MediaService],
 })
 export class AppModule implements NestModule {
   constructor(private mediaService: MediaService) {}

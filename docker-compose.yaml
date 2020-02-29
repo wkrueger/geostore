@@ -1,0 +1,23 @@
+version: '3.7'
+# apenas banco de dados
+services:
+  geostore-postgres:
+    image: kartoza/postgis:12.0
+    container_name: geostore_postgis
+    volumes:
+      - geostore_pg:/var/lib/postgresql
+    environment:
+      - 'POSTGRES_DB=geostore'
+      - 'POSTGRES_USER=willian'
+      - 'POSTGRES_PASSWORD=123456'
+      - 'ALLOW_IP_RANGE=0.0.0.0/0'
+    ports:
+      - '5432:5432' #local only
+    networks:
+      - default
+
+volumes:
+  geostore_pg:
+
+networks:
+  default:
