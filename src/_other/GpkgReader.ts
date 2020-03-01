@@ -10,7 +10,7 @@ export class GpkgReader {
     absFilePath,
   }: {
     sourceName?: string;
-    iterator: any;
+    iterator: (i: any) => Promise<void>;
     absFilePath: string;
   }) {
     const conn = knex({
@@ -28,11 +28,27 @@ export class GpkgReader {
     const selectedSource = sources[0];
     const query = conn.table(selectedSource.table_name).stream();
     await new Promise((resolve, reject) => {
-      const processor = through(iterator, function Flush() {
-        resolve();
-        query.end();
+      const processor = through(
+        { objectMode: true },
+        async (chunk, enc, cb) => {
+          try {
+            await iterator(chunk);
+            cb(null);
+          } catch (err) {
+            cb(err);
+          }
+        },
+        function Flush() {
+          resolve();
+          query.end();
+        },
+      );
+      query.on('error', err => {
+        reject(err);
       });
-      query.on('error', err => reject(err));
+      processor.on('error', err => {
+        reject(err);
+      });
       query.pipe(processor);
     });
     await conn.destroy();

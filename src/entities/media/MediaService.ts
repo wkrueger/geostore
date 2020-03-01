@@ -3,26 +3,27 @@ import { Media } from './MediaEntity';
 import fs from 'fs';
 import { getContext } from 'src/contexts/getContext';
 import mkdirp from 'mkdirp';
-import mime from 'mime';
+import * as mime from 'mime';
 import { error } from 'src/_other/error';
 import util from 'util';
 import multer from 'multer';
+import path from 'path';
 
 @Injectable()
 export class MediaService {
-  async create(i: { stream: fs.ReadStream; ctype: string }) {
-    const ext = mime.getExtension(i.ctype);
+  async create(i: { stream: fs.ReadStream; fileName: string }) {
+    let ext = path.parse(i.fileName).ext.substr(1);
     if (!ext) {
       throw error('INVALID_CTYPE', 'Content-type not recognized.');
     }
     const record = new Media();
-    record.contentType = i.ctype;
+    record.extension = ext;
     await record.save();
     // await record.reload();
 
     const ctx = getContext();
     await mkdirp(ctx.pathFromRoot('media'));
-    return new Promise((resolve, reject) => {
+    await new Promise((resolve, reject) => {
       const write = fs.createWriteStream(
         ctx.pathFromRoot('media', record.uuid + '.' + ext),
       );
@@ -39,7 +40,7 @@ export class MediaService {
       throw error('NOT_FOUND', 'Media not found.');
     }
 
-    const ext = mime.getExtension(found.contentType);
+    const ext = found.extension;
     const ctx = getContext();
     await util.promisify(fs.unlink)(
       ctx.pathFromRoot('media', found.uuid + '.' + ext),
@@ -51,11 +52,11 @@ export class MediaService {
   createMulterStorage() {
     const that = this;
     return {
-      async _handleFile(req: Request, file, cb) {
+      async _handleFile(req, file, cb) {
         try {
-          await that.create({
+          req.media = await that.create({
             stream: file.stream,
-            ctype: req.headers['content-type']!,
+            fileName: file.originalname,
           });
           cb(null);
         } catch (err) {

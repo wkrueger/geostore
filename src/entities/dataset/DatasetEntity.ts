@@ -5,6 +5,7 @@ import {
   ManyToOne,
   Column,
   OneToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Store } from '../store/StoreEntity';
 import { Operation } from '../operation/OperationEntity';
@@ -25,5 +26,6 @@ export class Dataset extends BaseEntity {
   operation!: Operation;
 
   @OneToOne(_type => Media)
+  @JoinColumn()
   media!: Media;
 }

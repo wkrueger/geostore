@@ -12,6 +12,9 @@ import { Operation } from './entities/operation/OperationEntity';
 import { StoreController } from './entities/store/StoreController';
 import { Store } from './entities/store/StoreEntity';
 import { MediaService } from './entities/media/MediaService';
+import { DatasetController } from './entities/dataset/DatasetController';
+import { DatasetService } from './entities/dataset/DatasetService';
+import { StoreService } from './entities/store/StoreService';
 
 const ctx = getContext();
 
@@ -28,8 +31,8 @@ const ctx = getContext();
       synchronize: true,
     }),
   ],
-  controllers: [StoreController],
-  providers: [MediaService],
+  controllers: [StoreController, DatasetController],
+  providers: [MediaService, DatasetService, StoreService],
 })
 export class AppModule implements NestModule {
   constructor(private mediaService: MediaService) {}

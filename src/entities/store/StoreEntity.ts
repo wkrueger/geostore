@@ -17,7 +17,7 @@ export class Store extends BaseEntity {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column()
+  @Column({ unique: true, nullable: false })
   code!: string;
 
   @OneToMany(

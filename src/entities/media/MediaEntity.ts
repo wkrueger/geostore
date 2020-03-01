@@ -1,6 +1,5 @@
-import { BaseEntity, PrimaryGeneratedColumn, Column, Entity } from 'typeorm';
 import { getContext } from 'src/contexts/getContext';
-import mime from 'mime';
+import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Media extends BaseEntity {
@@ -8,11 +7,10 @@ export class Media extends BaseEntity {
   uuid!: string;
 
   @Column({ nullable: false })
-  contentType!: string;
+  extension!: string;
 
   getAbsFilePath() {
     const ctx = getContext();
-    const ext = mime.getExtension(this.contentType);
-    return ctx.pathFromRoot('media', this.uuid + '.' + ext);
+    return ctx.pathFromRoot('media', this.uuid + '.' + this.extension);
   }
 }
