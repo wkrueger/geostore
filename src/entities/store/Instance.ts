@@ -15,14 +15,11 @@ export class StoreInstance {
     },
   });
 
-  _existsMemo;
   async tableExists(runner: QueryRunner) {
-    if (this._existsMemo) return;
     const exists = await runner.hasTable(this.tableName);
     if (!exists) {
       await this.createTable(runner);
     }
-    this._existsMemo = true;
   }
 
   async createTable(runner: QueryRunner) {
@@ -35,7 +32,6 @@ export class StoreInstance {
           { name: 'properties', type: 'jsonb' },
           { name: 'dataset', type: 'int', isNullable: false },
         ],
-        indices: [{ columnNames: ['geometry'], isSpatial: true }],
         foreignKeys: [
           {
             columnNames: ['dataset'],
@@ -46,6 +42,36 @@ export class StoreInstance {
         ],
       }),
     );
+    await runner.createIndex(
+      this.tableName,
+      new TableIndex({
+        columnNames: ['geometry'],
+        isSpatial: true,
+        name: 'geom_main',
+      }),
+    );
+  }
+
+  async dropIndices(runner: QueryRunner) {
+    try {
+      await runner.dropIndices(this.tableName, [
+        new TableIndex({ name: 'geom_main', columnNames: ['geometry'] }),
+      ]);
+    } catch (err) {}
+  }
+
+  async restoreIndices(runner: QueryRunner) {
+    await this.dropIndices(runner);
+    console.log('Restore indices...');
+    await runner.createIndex(
+      this.tableName,
+      new TableIndex({
+        columnNames: ['geometry'],
+        isSpatial: true,
+        name: 'geom_main',
+      }),
+    );
+    console.log('Done.');
   }
 
   async removeTable(runner: QueryRunner) {

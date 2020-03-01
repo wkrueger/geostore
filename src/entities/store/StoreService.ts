@@ -43,29 +43,48 @@ export class StoreService {
     await found.remove();
   }
 
-  async insertData(i: {
-    dataset: Dataset;
-    lines: { geom: any; properties: any }[];
-  }) {
-    const instance = this.getStoreInstance(i.dataset.store);
-    await instance.tableExists(this.runner);
-    const schema = instance.entitySchema;
+  async dataTransaction(
+    dataset: Dataset,
+    fn: (helpers: Helpers) => Promise<void>,
+  ) {
+    const instance = this.getStoreInstance(dataset.store);
+    try {
+      await instance.tableExists(this.runner);
+      await instance.dropIndices(this.runner);
+      const schema = instance.entitySchema;
+      let that = this;
 
-    await this.conn
-      .createQueryBuilder()
-      .insert()
-      .into(schema)
-      .values(
-        i.lines.map(line => {
-          // const buffer = Buffer.from(line.geom, 'hex');
-
-          return {
-            geometry: line.geom,
-            properties: line.properties,
-            dataset: i.dataset.id,
-          };
-        }),
-      )
-      .execute();
+      async function insertData(i: {
+        lines: { geom: any; properties: any }[];
+      }) {
+        try {
+          const values = i.lines.map(line => {
+            return {
+              geometry: line.geom,
+              properties: line.properties,
+              dataset: dataset.id,
+            };
+          });
+          await that.conn
+            .createQueryBuilder()
+            .insert()
+            .into(schema)
+            .values(values)
+            .execute();
+        } catch (err) {
+          console.log('err');
+        }
+      }
+      const helpers = { insertData };
+      await fn(helpers);
+      await instance.restoreIndices(this.runner);
+    } catch (err) {
+      await instance.restoreIndices(this.runner);
+      throw err;
+    }
   }
+}
+
+export interface Helpers {
+  insertData(i: { lines: { geom: any; properties: any }[] }): Promise<void>;
 }

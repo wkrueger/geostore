@@ -20,20 +20,34 @@ export class DatasetService {
     await dataset.save();
 
     const that = this;
-    await new GpkgReader().read({
-      async iterator(line) {
-        let geom: any;
-        let properties = {};
-        Object.entries(line).forEach(([k, v]) => {
-          if (k === 'geom') geom = v;
-          else properties[k] = v;
+    let count = 0;
+    let batch = [] as any[];
+    that.storeSvc.dataTransaction(dataset, async helpers => {
+      await new GpkgReader().read({
+        async iterator(line) {
+          let geom: any;
+          let properties = {};
+          Object.entries(line).forEach(([k, v]) => {
+            if (k === 'geom') geom = v;
+            else properties[k] = v;
+          });
+          batch.push({ geom, properties });
+          if (batch.length % 10 === 0) {
+            await helpers.insertData({
+              lines: batch,
+            });
+            batch = [];
+          }
+          count++;
+          if (count % 20 === 0) console.log('Inserted', count);
+        },
+        absFilePath: i.media.getAbsFilePath(),
+      });
+      if (batch.length) {
+        await helpers.insertData({
+          lines: batch,
         });
-        await that.storeSvc.insertData({
-          dataset,
-          lines: [{ geom, properties }],
-        });
-      },
-      absFilePath: i.media.getAbsFilePath(),
+      }
     });
     return dataset;
   }
