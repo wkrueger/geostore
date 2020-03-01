@@ -57,6 +57,8 @@ export class StoreService {
       .into(schema)
       .values(
         i.lines.map(line => {
+          // const buffer = Buffer.from(line.geom, 'hex');
+
           return {
             geometry: line.geom,
             properties: line.properties,

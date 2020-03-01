@@ -1,8 +1,31 @@
 import knex from 'knex';
 import through from 'through2';
+import wkx from 'wkx';
+
+/*
+b5 fd
+1011 0101 1111 1101
+
+*/
 
 export class GpkgReader {
-  constructor() {}
+  stripHeader(src: Buffer) {
+    // magic: 0 - 1
+    // version: 2
+    // flags: 3
+    // srsid: 4 - 35
+    // envelope: variable
+    const flags = src[3];
+    const sizemap = {
+      0: 0,
+      1: 32,
+      2: 48,
+      3: 48,
+      4: 64,
+    };
+    const envsize = sizemap[flags];
+    return src.slice(36 + envsize);
+  }
 
   async read({
     sourceName,
@@ -32,6 +55,11 @@ export class GpkgReader {
         { objectMode: true },
         async (chunk, enc, cb) => {
           try {
+            // http://www.geopackage.org./spec/#gpb_format
+            const geomUint = chunk.geom;
+            const geomBuffer = Buffer.from(geomUint);
+            const stripped = this.stripHeader(geomBuffer);
+            chunk.geom = wkx.Geometry.parse(stripped);
             await iterator(chunk);
             cb(null);
           } catch (err) {

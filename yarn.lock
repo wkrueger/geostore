@@ -484,6 +484,13 @@
   dependencies:
     "@babel/types" "^7.3.0"
 
+"@types/binary-parser@^1.5.0":
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/@types/binary-parser/-/binary-parser-1.5.0.tgz#d8a9676a7763b91c7537347d1d596d8b96adb164"
+  integrity sha512-eBMqKUPRjXX+E30JQOcda8Je4lw4TyQvDSOXhWx+T019lki2TURNf0kVaR27LG4B2cLu4JXfrnNp+3aEq23leA==
+  dependencies:
+    "@types/node" "*"
+
 "@types/body-parser@*":
   version "1.19.0"
   resolved "https://registry.yarnpkg.com/@types/body-parser/-/body-parser-1.19.0.tgz#0685b3c47eb3006ffed117cdd55164b61f80538f"
@@ -1294,6 +1301,11 @@ binary-extensions@^1.0.0:
   version "1.13.1"
   resolved "https://registry.yarnpkg.com/binary-extensions/-/binary-extensions-1.13.1.tgz#598afe54755b2868a5330d2aff9d4ebb53209b65"
   integrity sha512-Un7MIEDdUC5gNpcGDV97op1Ywk748MpHcFTHoYs6qnj1Z3j7I53VG3nwZhKzoBZmbdRNnb6WRdFlwl7tSDuZGw==
+
+binary-parser@^1.5.0:
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/binary-parser/-/binary-parser-1.5.0.tgz#3e50de3a5076badbacd760e833e7d94892b9e9fa"
+  integrity sha512-z+hqNSnO7trFDPLihjUGTwlSTbcIzLYSCwnbiasFkRvCIY9F3ZTex7Mlm9UAP3w5mfHD3KxejnWFPJjtsVVMuw==
 
 bindings@^1.5.0:
   version "1.5.0"
@@ -7348,6 +7360,13 @@ windows-release@^3.1.0:
   integrity sha512-QTlz2hKLrdqukrsapKsINzqMgOUpQW268eJ0OaOpJN32h272waxR9fkB9VoWRtK7uKHG5EHJcTXQBD8XZVJkFA==
   dependencies:
     execa "^1.0.0"
+
+wkx@^0.4.8:
+  version "0.4.8"
+  resolved "https://registry.yarnpkg.com/wkx/-/wkx-0.4.8.tgz#a092cf088d112683fdc7182fd31493b2c5820003"
+  integrity sha512-ikPXMM9IR/gy/LwiOSqWlSL3X/J5uk9EO2hHNRXS41eTLXaUFEVw9fn/593jW/tE5tedNg8YjT5HkCa4FqQZyQ==
+  dependencies:
+    "@types/node" "*"
 
 word-wrap@~1.2.3:
   version "1.2.3"
