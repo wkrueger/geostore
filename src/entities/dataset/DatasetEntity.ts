@@ -6,6 +6,7 @@ import {
   Column,
   OneToOne,
   JoinColumn,
+  CreateDateColumn,
 } from 'typeorm';
 import { Store } from '../store/StoreEntity';
 import { Operation } from '../operation/OperationEntity';
@@ -28,4 +29,7 @@ export class Dataset extends BaseEntity {
   @OneToOne(_type => Media)
   @JoinColumn()
   media!: Media;
+
+  @CreateDateColumn()
+  createdAt!: Date;
 }

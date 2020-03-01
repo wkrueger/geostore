@@ -9,6 +9,20 @@ b5 fd
 */
 
 export class GpkgReader {
+  getBit(nr: number, byte: number) {
+    let bt = (nr >> byte) & 1;
+    return bt;
+  }
+
+  getInt(src: number[]) {
+    let out = 0;
+    for (let x = 0; x < src.length; x++) {
+      const bit = src[x];
+      if (bit) out += 2 ** x;
+    }
+    return out;
+  }
+
   stripHeader(src: Buffer) {
     // magic: 0 - 1
     // version: 2
@@ -16,6 +30,9 @@ export class GpkgReader {
     // srsid: 4 - 35
     // envelope: variable
     const flags = src[3];
+    let bits = [...Array(8).keys()].map(x => this.getBit(flags, x)).reverse();
+    let slice = bits.slice(4, 7).reverse();
+    let contents = this.getInt(slice);
     const sizemap = {
       0: 0,
       1: 32,
@@ -23,8 +40,8 @@ export class GpkgReader {
       3: 48,
       4: 64,
     };
-    const envsize = sizemap[flags];
-    return src.slice(36 + envsize);
+    const envsize = sizemap[contents];
+    return src.slice(8 + envsize);
   }
 
   async read({
@@ -58,8 +75,18 @@ export class GpkgReader {
             // http://www.geopackage.org./spec/#gpb_format
             const geomUint = chunk.geom;
             const geomBuffer = Buffer.from(geomUint);
+            // let test = [...Array(110).keys()];
+            // test.forEach(begin => {
+            //   try {
+            //     let slice = geomBuffer.slice(begin);
+            //     let parsed = wkx.Geometry.parse(slice);
+            //     console.log('SUCCESS', begin);
+            //   } catch (err) {
+            //     console.log('failed with', begin);
+            //   }
+            // });
             const stripped = this.stripHeader(geomBuffer);
-            chunk.geom = wkx.Geometry.parse(stripped);
+            chunk.geom = stripped; //wkx.Geometry.parse(stripped);
             await iterator(chunk);
             cb(null);
           } catch (err) {
