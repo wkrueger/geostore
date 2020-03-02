@@ -4,7 +4,7 @@ import {
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { getContext } from './contexts/getContext';
 import { Dataset } from './entities/dataset/DatasetEntity';
 import { Media } from './entities/media/MediaEntity';

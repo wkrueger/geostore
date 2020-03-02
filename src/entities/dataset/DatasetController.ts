@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Req } from '@nestjs/common';
+import { Controller, Get, Post, Req, Query } from '@nestjs/common';
 import { error } from 'src/_other/error';
 import { MediaService } from '../media/MediaService';
 import { Store } from '../store/StoreEntity';
@@ -6,6 +6,7 @@ import { Dataset } from './DatasetEntity';
 import { DatasetService } from './DatasetService';
 import { ApiOperation } from '@nestjs/swagger';
 import { trimDocs } from 'src/_other/trimDocs';
+import { createQueryBuilder } from 'typeorm';
 
 @Controller('datasets')
 export class DatasetController {
@@ -39,7 +40,23 @@ export class DatasetController {
   }
 
   @Get()
-  async list() {
-    return Dataset.find();
+  async list(@Query('id') id?: number, @Query('store') store?: string) {
+    const opts = {
+      relations: ['operation', 'media', 'store'],
+      where: {} as Partial<Dataset>,
+    };
+    if (store) {
+      if (isNaN(parseInt(store)))
+        throw error(
+          'INVALID_QUERY',
+          'Invalid argument format for query parameter "store".',
+        );
+      opts.where.store = parseInt(store) as any;
+    }
+
+    if (id) {
+      return Dataset.findOne(opts);
+    }
+    return Dataset.find(opts);
   }
 }

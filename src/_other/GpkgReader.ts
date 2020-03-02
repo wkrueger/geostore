@@ -50,7 +50,7 @@ export class GpkgReader {
     absFilePath,
   }: {
     sourceName?: string;
-    iterator: (i: any) => Promise<void>;
+    iterator: (i: any, count: number) => Promise<void>;
     absFilePath: string;
   }) {
     const conn = knex({
@@ -66,6 +66,9 @@ export class GpkgReader {
     }
     const sources = await srcQuery;
     const selectedSource = sources[0];
+    const [{ count }] = await conn
+      .table(selectedSource.table_name)
+      .count('* AS count');
     const query = conn.table(selectedSource.table_name).stream();
     await new Promise((resolve, reject) => {
       const processor = through(
@@ -75,19 +78,9 @@ export class GpkgReader {
             // http://www.geopackage.org./spec/#gpb_format
             const geomUint = chunk.geom;
             const geomBuffer = Buffer.from(geomUint);
-            // let test = [...Array(110).keys()];
-            // test.forEach(begin => {
-            //   try {
-            //     let slice = geomBuffer.slice(begin);
-            //     let parsed = wkx.Geometry.parse(slice);
-            //     console.log('SUCCESS', begin);
-            //   } catch (err) {
-            //     console.log('failed with', begin);
-            //   }
-            // });
             const stripped = this.stripHeader(geomBuffer);
             chunk.geom = stripped; //wkx.Geometry.parse(stripped);
-            await iterator(chunk);
+            await iterator(chunk, count);
             cb(null);
           } catch (err) {
             cb(err);

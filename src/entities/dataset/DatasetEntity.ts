@@ -21,9 +21,11 @@ export class Dataset extends BaseEntity {
     _type => Store,
     store => store.datasets,
   )
+  @JoinColumn()
   store!: Store;
 
-  @ManyToOne(_type => Operation)
+  @OneToOne(_type => Operation)
+  @JoinColumn()
   operation!: Operation;
 
   @OneToOne(_type => Media)

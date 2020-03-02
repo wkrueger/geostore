@@ -43,6 +43,28 @@ export class StoreService {
     await found.remove();
   }
 
+  async query(datasetId: number, geometryWkt?: string) {
+    const dataset = await Dataset.findOne({
+      relations: ['store'],
+      where: { id: datasetId },
+    });
+    if (!dataset) {
+      throw error('NOT_FOUND', 'Store not found.');
+    }
+    const instance = this.getStoreInstance(dataset.store);
+    let query = this.conn
+      .getRepository(instance.entitySchema)
+      .createQueryBuilder('inst')
+      .where('inst.dataset = :dataset', { dataset: datasetId });
+    if (geometryWkt) {
+      query = query.andWhere('ST_Intersects(inst.geometry, :g1)', {
+        g1: geometryWkt,
+      });
+    }
+    const results = query.execute();
+    return results;
+  }
+
   async dataTransaction(
     dataset: Dataset,
     fn: (helpers: Helpers) => Promise<void>,
@@ -57,23 +79,19 @@ export class StoreService {
       async function insertData(i: {
         lines: { geom: any; properties: any }[];
       }) {
-        try {
-          const values = i.lines.map(line => {
-            return {
-              geometry: line.geom,
-              properties: line.properties,
-              dataset: dataset.id,
-            };
-          });
-          await that.conn
-            .createQueryBuilder()
-            .insert()
-            .into(schema)
-            .values(values)
-            .execute();
-        } catch (err) {
-          console.log('err');
-        }
+        const values = i.lines.map(line => {
+          return {
+            geometry: line.geom,
+            properties: line.properties,
+            dataset: dataset.id,
+          };
+        });
+        await that.conn
+          .createQueryBuilder()
+          .insert()
+          .into(schema, ['geometry', 'properties', 'dataset'])
+          .values(values)
+          .execute();
       }
       const helpers = { insertData };
       await fn(helpers);
