@@ -1,37 +1,22 @@
-import {
-  Entity,
-  BaseEntity,
-  PrimaryGeneratedColumn,
-  ManyToOne,
-  Column,
-  OneToOne,
-  JoinColumn,
-  CreateDateColumn,
-} from 'typeorm';
 import { Store } from '../store/StoreEntity';
 import { Operation } from '../operation/OperationEntity';
 import { Media } from '../media/MediaEntity';
+import { Entity, PrimaryKey, ManyToOne, OneToOne, Property } from 'mikro-orm';
 
 @Entity()
-export class Dataset extends BaseEntity {
-  @PrimaryGeneratedColumn()
+export class Dataset {
+  @PrimaryKey()
   id!: number;
 
-  @ManyToOne(
-    _type => Store,
-    store => store.datasets,
-  )
-  @JoinColumn()
+  @ManyToOne()
   store!: Store;
 
-  @OneToOne(_type => Operation)
-  @JoinColumn()
+  @OneToOne()
   operation!: Operation;
 
-  @OneToOne(_type => Media)
-  @JoinColumn()
+  @OneToOne()
   media!: Media;
 
-  @CreateDateColumn()
+  @Property({ onCreate: () => new Date() })
   createdAt!: Date;
 }

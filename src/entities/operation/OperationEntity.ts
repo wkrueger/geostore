@@ -1,11 +1,4 @@
-import {
-  BaseEntity,
-  Entity,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-  Column,
-} from 'typeorm';
+import { Entity, PrimaryKey, Property } from 'mikro-orm';
 
 export enum OperationState {
   PENDING,
@@ -14,26 +7,22 @@ export enum OperationState {
 }
 
 @Entity()
-export class Operation extends BaseEntity {
-  @PrimaryGeneratedColumn()
+export class Operation {
+  @PrimaryKey()
   id!: number;
 
-  @Column({
-    type: 'enum',
-    enum: OperationState,
-    default: OperationState.PENDING,
-  })
-  state!: OperationState;
+  @Property()
+  state: OperationState = OperationState.PENDING;
 
-  @Column({ default: 0, type: 'float' })
+  @Property({ default: 0, type: 'float' })
   progress: number = 0;
 
-  @Column({ length: 255, nullable: true })
-  message!: string;
+  @Property({ length: 255 })
+  message?: string;
 
-  @CreateDateColumn()
+  @Property({ onCreate: () => new Date() })
   createdAt!: Date;
 
-  @UpdateDateColumn()
+  @Property({ onUpdate: () => new Date() })
   updatedAt!: Date;
 }

@@ -1,29 +1,22 @@
-import {
-  PrimaryGeneratedColumn,
-  Entity,
-  Column,
-  BaseEntity,
-  OneToMany,
-} from 'typeorm';
+import { Cascade, Entity, OneToMany, PrimaryKey, Property } from 'mikro-orm';
 import { Dataset } from '../dataset/DatasetEntity';
 
 @Entity()
-export class Store extends BaseEntity {
+export class Store {
   constructor(partial: Partial<Store> = {}) {
-    super();
     Object.assign(this, partial);
   }
 
-  @PrimaryGeneratedColumn()
+  @PrimaryKey()
   id!: number;
 
-  @Column({ unique: true, nullable: false })
+  @Property({ unique: true })
   code!: string;
 
   @OneToMany(
-    _type => Dataset,
+    () => Dataset,
     dataset => dataset.store,
-    { cascade: true },
+    { cascade: [Cascade.ALL] },
   )
   datasets!: Dataset[];
 }

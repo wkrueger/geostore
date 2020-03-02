@@ -1,12 +1,12 @@
 import { getContext } from 'src/contexts/getContext';
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, PrimaryKey, Property } from 'mikro-orm';
 
 @Entity()
-export class Media extends BaseEntity {
-  @PrimaryGeneratedColumn('uuid')
+export class Media {
+  @PrimaryKey()
   uuid!: string;
 
-  @Column({ nullable: false })
+  @Property()
   extension!: string;
 
   getAbsFilePath() {

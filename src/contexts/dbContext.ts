@@ -7,11 +7,11 @@ export const dbContext = createContextMapper({
   envContext({ getKey }) {
     const out = {
       db: {
-        database: getKey('DB_NAME'),
+        database: getKey('DB_NAME')!,
         host: getKey('DB_HOST') || '127.0.0.1',
-        user: getKey('DB_USER'),
+        user: getKey('DB_USER')!,
         port: Number(getKey('DB_PORT')) || 5432,
-        password: getKey('DB_PASSWORD'),
+        password: getKey('DB_PASSWORD')!,
       },
     };
     return out;

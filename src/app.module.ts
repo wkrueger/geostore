@@ -4,7 +4,7 @@ import {
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
-
+import { MikroOrmModule } from 'nestjs-mikro-orm';
 import { getContext } from './contexts/getContext';
 import { Dataset } from './entities/dataset/DatasetEntity';
 import { Media } from './entities/media/MediaEntity';
@@ -20,15 +20,14 @@ const ctx = getContext();
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres',
+    MikroOrmModule.forRoot({
+      type: 'postgresql',
       host: ctx.db.host,
       port: ctx.db.port,
-      username: ctx.db.user,
+      user: ctx.db.user,
       password: ctx.db.password,
-      database: ctx.db.database,
+      dbName: ctx.db.database,
       entities: [Store, Operation, Media, Dataset],
-      synchronize: true,
     }),
   ],
   controllers: [StoreController, DatasetController],
