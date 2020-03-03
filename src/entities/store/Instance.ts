@@ -1,80 +1,46 @@
-import { QueryRunner, Table, TableIndex, EntitySchema } from 'typeorm';
-import { Store } from './StoreEntity';
+import { Store } from '../_orm/StoreEntity';
+import { EntityManager, EntitySchema, MikroORM } from 'mikro-orm';
 
 export class StoreInstance {
-  constructor(public store: Store) {}
+  constructor(public store: Store, private orm: MikroORM) {}
   tableName = 'instance_' + this.store.code;
 
   entitySchema = new EntitySchema({
     name: this.tableName,
-    columns: {
+    properties: {
       id: { type: 'int', primary: true, generated: true },
       geometry: { type: 'geometry' },
       properties: { type: 'jsonb' },
-      dataset: { type: 'int' },
+      dataset: { reference: 'm:1', entity: 'Dataset' },
     },
   });
 
-  async tableExists(runner: QueryRunner) {
-    const exists = await runner.hasTable(this.tableName);
+  async tableExists(em: EntityManager) {
+    const ctx = em.getTransactionContext()!;
+    const exists = await ctx.schema.hasTable(this.tableName);
     if (!exists) {
-      await this.createTable(runner);
+      await this.createTable();
     }
   }
 
-  async createTable(runner: QueryRunner) {
-    await runner.createTable(
-      new Table({
-        name: this.tableName,
-        columns: [
-          { name: 'id', type: 'int', isPrimary: true, isGenerated: true },
-          { name: 'geometry', type: 'geometry' },
-          { name: 'properties', type: 'jsonb' },
-          { name: 'dataset', type: 'int', isNullable: false },
-        ],
-        foreignKeys: [
-          {
-            columnNames: ['dataset'],
-            referencedColumnNames: ['id'],
-            referencedTableName: 'dataset',
-            onDelete: 'CASCADE',
-          },
-        ],
-      }),
-    );
-    await runner.createIndex(
-      this.tableName,
-      new TableIndex({
-        columnNames: ['geometry'],
-        isSpatial: true,
-        name: 'geom_main',
-      }),
-    );
+  async createTable() {
+    const generator = this.orm.getSchemaGenerator() as any;
+    const meta = this.entitySchema.meta;
+    await generator.createTable(meta);
   }
 
-  async dropIndices(runner: QueryRunner) {
-    try {
-      await runner.dropIndices(this.tableName, [
-        new TableIndex({ name: 'geom_main', columnNames: ['geometry'] }),
-      ]);
-    } catch (err) {}
+  async dropIndices() {}
+
+  async restoreIndices() {}
+
+  async removeTable(em: EntityManager) {
+    const ctx = em.getTransactionContext();
+    if (await ctx?.schema.hasTable(this.tableName)) {
+      await ctx?.schema.dropTable(this.tableName);
+    }
   }
 
-  async restoreIndices(runner: QueryRunner) {
-    await this.dropIndices(runner);
-    console.log('Restore indices...');
-    await runner.createIndex(
-      this.tableName,
-      new TableIndex({
-        columnNames: ['geometry'],
-        isSpatial: true,
-        name: 'geom_main',
-      }),
-    );
-    console.log('Done.');
-  }
-
-  async removeTable(runner: QueryRunner) {
-    await runner.dropTable(this.tableName);
+  getQueryBuilder(em: EntityManager) {
+    return em.getTransactionContext()?.table(this.tableName)!;
   }
 }

@@ -1,22 +1,27 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { CreateStoreDTO, StoreQueryDto } from './StoreDto';
-import { Store } from './StoreEntity';
+import { Store } from '../_orm/StoreEntity';
 import wkx from 'wkx';
 import { StoreService } from './StoreService';
+import { InjectRepository } from 'nestjs-mikro-orm';
+import { EntityRepository } from 'mikro-orm';
 
 @Controller('stores')
 export class StoreController {
-  constructor(public storeSvc: StoreService) {}
+  constructor(
+    public storeSvc: StoreService,
+    @InjectRepository(Store) private storeRepo: EntityRepository<Store>,
+  ) {}
 
   @Post()
   async create(@Body() body: CreateStoreDTO) {
     let store = new Store(body);
-    return store.save();
+    return this.storeRepo.persist(store);
   }
 
   @Get()
   async list() {
-    return Store.find();
+    return this.storeRepo.findAll();
   }
 
   @Post('query')

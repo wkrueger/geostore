@@ -1,18 +1,20 @@
 import { Controller, Get, Post, Req, Query } from '@nestjs/common';
 import { error } from 'src/_other/error';
 import { MediaService } from '../media/MediaService';
-import { Store } from '../store/StoreEntity';
-import { Dataset } from './DatasetEntity';
+import { Store } from '../_orm/StoreEntity';
+import { Dataset } from '../_orm/DatasetEntity';
 import { DatasetService } from './DatasetService';
 import { ApiOperation } from '@nestjs/swagger';
 import { trimDocs } from 'src/_other/trimDocs';
-import { createQueryBuilder } from 'typeorm';
+import { EntityRepository } from 'mikro-orm';
+import { InjectRepository } from 'nestjs-mikro-orm';
 
 @Controller('datasets')
 export class DatasetController {
   constructor(
-    private mediaService: MediaService,
     private datasetService: DatasetService,
+    @InjectRepository(Store) private storeRepo: EntityRepository<Store>,
+    @InjectRepository(Dataset) private datasetRepo: EntityRepository<Dataset>,
   ) {}
 
   @ApiOperation({
@@ -26,7 +28,7 @@ export class DatasetController {
   async create(@Req() request: any) {
     const storeCode: string = request.body.storeCode;
     if (!storeCode) throw error('BAD_REQUEST', 'storeCode parameter missing.');
-    const store = await Store.findOne({ code: storeCode });
+    const store = await this.storeRepo.findOne({ code: storeCode });
     if (!store)
       throw error('STORE_NOT_FOUND', 'Store with this code not found.');
     if (!request.media) {
@@ -54,9 +56,9 @@ export class DatasetController {
       opts.where.store = parseInt(store) as any;
     }
 
-    if (id) {
-      return Dataset.findOne(opts);
-    }
-    return Dataset.find(opts);
+    return this.datasetRepo.find({
+      id: id || undefined,
+      store: store ? { code: store } : undefined,
+    });
   }
 }

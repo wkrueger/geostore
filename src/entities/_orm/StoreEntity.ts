@@ -1,5 +1,5 @@
 import { Cascade, Entity, OneToMany, PrimaryKey, Property } from 'mikro-orm';
-import { Dataset } from '../dataset/DatasetEntity';
+import { Dataset } from './DatasetEntity';
 
 @Entity()
 export class Store {

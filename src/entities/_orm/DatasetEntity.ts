@@ -1,5 +1,5 @@
-import { Store } from '../store/StoreEntity';
-import { Operation } from '../operation/OperationEntity';
+import { Store } from './StoreEntity';
+import { Operation } from './OperationEntity';
 import { Media } from '../media/MediaEntity';
 import { Entity, PrimaryKey, ManyToOne, OneToOne, Property } from 'mikro-orm';
 

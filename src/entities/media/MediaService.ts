@@ -8,9 +8,15 @@ import { error } from 'src/_other/error';
 import util from 'util';
 import multer from 'multer';
 import path from 'path';
+import { InjectRepository } from 'nestjs-mikro-orm';
+import { EntityRepository } from 'mikro-orm';
 
 @Injectable()
 export class MediaService {
+  constructor(
+    @InjectRepository(Media) private mediaRepo: EntityRepository<Media>,
+  ) {}
+
   async create(i: { stream: fs.ReadStream; fileName: string }) {
     let ext = path.parse(i.fileName).ext.substr(1);
     if (!ext) {
@@ -18,7 +24,7 @@ export class MediaService {
     }
     const record = new Media();
     record.extension = ext;
-    await record.save();
+    await this.mediaRepo.persist(record);
     // await record.reload();
 
     const ctx = getContext();
@@ -35,7 +41,7 @@ export class MediaService {
   }
 
   async remove(i: { uuid: string }) {
-    const found = await Media.findOne({ uuid: i.uuid });
+    const found = await this.mediaRepo.findOne({ uuid: i.uuid });
     if (!found) {
       throw error('NOT_FOUND', 'Media not found.');
     }
@@ -46,7 +52,7 @@ export class MediaService {
       ctx.pathFromRoot('media', found.uuid + '.' + ext),
     );
 
-    await found.remove();
+    await this.mediaRepo.remove(found);
   }
 
   createMulterStorage() {

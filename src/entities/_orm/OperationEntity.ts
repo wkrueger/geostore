@@ -1,4 +1,4 @@
-import { Entity, PrimaryKey, Property } from 'mikro-orm';
+import { Entity, PrimaryKey, Property, Enum } from 'mikro-orm';
 
 export enum OperationState {
   PENDING,
@@ -11,7 +11,7 @@ export class Operation {
   @PrimaryKey()
   id!: number;
 
-  @Property()
+  @Enum()
   state: OperationState = OperationState.PENDING;
 
   @Property({ default: 0, type: 'float' })

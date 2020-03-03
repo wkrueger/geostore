@@ -6,11 +6,11 @@ import {
 } from '@nestjs/common';
 import { MikroOrmModule } from 'nestjs-mikro-orm';
 import { getContext } from './contexts/getContext';
-import { Dataset } from './entities/dataset/DatasetEntity';
+import { Dataset } from './entities/_orm/DatasetEntity';
 import { Media } from './entities/media/MediaEntity';
-import { Operation } from './entities/operation/OperationEntity';
+import { Operation } from './entities/_orm/OperationEntity';
 import { StoreController } from './entities/store/StoreController';
-import { Store } from './entities/store/StoreEntity';
+import { Store } from './entities/_orm/StoreEntity';
 import { MediaService } from './entities/media/MediaService';
 import { DatasetController } from './entities/dataset/DatasetController';
 import { DatasetService } from './entities/dataset/DatasetService';

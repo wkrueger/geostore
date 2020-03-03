@@ -1,24 +1,30 @@
 import { Injectable } from '@nestjs/common';
 import { GpkgReader } from 'src/_other/GpkgReader';
 import { Media } from '../media/MediaEntity';
-import { Operation, OperationState } from '../operation/OperationEntity';
-import { Store } from '../store/StoreEntity';
-import { Dataset } from './DatasetEntity';
+import { Operation, OperationState } from '../_orm/OperationEntity';
+import { Store } from '../_orm/StoreEntity';
+import { Dataset } from '../_orm/DatasetEntity';
 import { StoreService } from '../store/StoreService';
+import { InjectRepository, Entity } from 'nestjs-mikro-orm';
+import { EntityRepository } from 'mikro-orm';
 
 @Injectable()
 export class DatasetService {
-  constructor(private storeSvc: StoreService) {}
+  constructor(
+    private storeSvc: StoreService,
+    @InjectRepository(Operation)
+    private operationRepo: EntityRepository<Operation>,
+    @InjectRepository(Dataset) private datasetRepo: EntityRepository<Dataset>,
+  ) {}
 
   async create(i: { store: Store; media: Media }) {
     const dataset = new Dataset();
     const op = new Operation();
     op.state = OperationState.PENDING;
-    await op.save();
     dataset.operation = op;
     dataset.store = i.store;
     dataset.media = i.media;
-    await dataset.save();
+    await this.datasetRepo.persist(dataset);
 
     const that = this;
     let count = 0;
@@ -44,7 +50,7 @@ export class DatasetService {
             if (count % 40 === 0) {
               console.log('Inserted', count);
               op.progress = count / total;
-              op.save();
+              await that.operationRepo.persist(op);
             }
           },
           absFilePath: i.media.getAbsFilePath(),
@@ -57,13 +63,13 @@ export class DatasetService {
           }
           op.state = OperationState.COMPLETED;
           op.progress = 1;
-          return op.save();
+          await that.operationRepo.persist(op);
         })
         .catch(err => {
           console.log('Operation errored', err);
           op.state = OperationState.ERRORED;
           op.message = String(err);
-          return op.save();
+          that.operationRepo.persist(op);
         });
     });
     return dataset;

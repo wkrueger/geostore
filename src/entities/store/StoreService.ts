@@ -1,67 +1,55 @@
 import { Injectable } from '@nestjs/common';
 import { error } from 'src/_other/error';
-import { Connection } from 'typeorm';
-import { Dataset } from '../dataset/DatasetEntity';
+import { Dataset } from '../_orm/DatasetEntity';
 import { StoreInstance } from './Instance';
-import { Store } from './StoreEntity';
+import { Store } from '../_orm/StoreEntity';
+import { InjectRepository } from 'nestjs-mikro-orm';
+import { EntityRepository, EntityManager, MikroORM } from 'mikro-orm';
 
 @Injectable()
 export class StoreService {
-  constructor(private conn: Connection) {}
-  runner = this.conn.createQueryRunner();
+  constructor(
+    @InjectRepository(Store) private storeRepo: EntityRepository<Store>,
+    @InjectRepository(Dataset) private datasetRepo: EntityRepository<Dataset>,
+    private em: EntityManager,
+    private orm: MikroORM,
+  ) {}
 
   storeInstances: Record<string, StoreInstance> = {};
 
-  getStoreInstance(meta: Store) {
-    if (this.storeInstances[meta.code]) return this.storeInstances[meta.code];
-    this.storeInstances[meta.code] = new StoreInstance(meta);
-    return this.storeInstances[meta.code];
+  getStoreInstance(store: Store) {
+    if (this.storeInstances[store.code]) return this.storeInstances[store.code];
+    this.storeInstances[store.code] = new StoreInstance(store, this.orm);
+    return this.storeInstances[store.code];
   }
 
   async create(i: { code: string }) {
-    const meta = new Store();
-    meta.code = i.code;
-    await meta.save();
-
-    const instance = this.getStoreInstance(meta);
-    const runner = this.conn.createQueryRunner('master');
-    await instance.createTable(runner);
-    return meta;
+    const store = new Store();
+    store.code = i.code;
+    await this.storeRepo.persist(store);
+    const instance = this.getStoreInstance(store);
+    await instance.createTable();
+    return store;
   }
 
   async remove(i: { id: number }) {
-    const found = await Store.findOne({ id: i.id });
-    if (!found) {
-      throw error('NOT_FOUND', 'Store not found.');
-    }
-
+    const found = await this.storeRepo.findOne({ id: i.id });
+    if (!found) throw error('NOT_FOUND', 'Store not found.');
     const instance = this.getStoreInstance(found);
-    const runner = this.conn.createQueryRunner('master');
-    await instance.removeTable(runner);
+    await instance.removeTable(this.em);
     delete this.storeInstances[found.code];
-
-    await found.remove();
+    await this.storeRepo.remove(found);
   }
 
   async query(datasetId: number, geometryWkt?: string) {
-    const dataset = await Dataset.findOne({
-      relations: ['store'],
-      where: { id: datasetId },
-    });
-    if (!dataset) {
-      throw error('NOT_FOUND', 'Store not found.');
-    }
+    const dataset = await this.datasetRepo.findOne({ id: datasetId });
+    if (!dataset) throw error('NOT_FOUND', 'Store not found.');
     const instance = this.getStoreInstance(dataset.store);
-    let query = this.conn
-      .getRepository(instance.entitySchema)
-      .createQueryBuilder('inst')
-      .where('inst.dataset = :dataset', { dataset: datasetId });
+    let query = instance.getQueryBuilder(this.em).where({ dataset: datasetId });
     if (geometryWkt) {
-      query = query.andWhere('ST_Intersects(inst.geometry, :g1)', {
-        g1: geometryWkt,
-      });
+      query = query.andWhere('ST_Intersects(inst.geometry, ?)', geometryWkt);
     }
-    const results = query.execute();
+    const results = await query;
     return results;
   }
 
@@ -71,8 +59,8 @@ export class StoreService {
   ) {
     const instance = this.getStoreInstance(dataset.store);
     try {
-      await instance.tableExists(this.runner);
-      await instance.dropIndices(this.runner);
+      await instance.tableExists(this.em);
+      await instance.dropIndices();
       const schema = instance.entitySchema;
       let that = this;
 
@@ -86,18 +74,14 @@ export class StoreService {
             dataset: dataset.id,
           };
         });
-        await that.conn
-          .createQueryBuilder()
-          .insert()
-          .into(schema, ['geometry', 'properties', 'dataset'])
-          .values(values)
-          .execute();
+
+        await instance.getQueryBuilder(that.em).insert({ values });
       }
       const helpers = { insertData };
       await fn(helpers);
-      await instance.restoreIndices(this.runner);
+      await instance.restoreIndices();
     } catch (err) {
-      await instance.restoreIndices(this.runner);
+      await instance.restoreIndices();
       throw err;
     }
   }
