@@ -1,13 +1,20 @@
-import { Controller, Get, Post, Req, Query } from '@nestjs/common';
-import { error } from 'src/_other/error';
-import { MediaService } from '../media/MediaService';
-import { Store } from '../_orm/StoreEntity';
-import { Dataset } from '../_orm/DatasetEntity';
-import { DatasetService } from './DatasetService';
+import {
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  Delete,
+  Param,
+} from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
-import { trimDocs } from 'src/_other/trimDocs';
 import { EntityRepository } from 'mikro-orm';
 import { InjectRepository } from 'nestjs-mikro-orm';
+import { error } from 'src/_other/error';
+import { trimDocs } from 'src/_other/trimDocs';
+import { Dataset } from '../_orm/DatasetEntity';
+import { Store } from '../_orm/StoreEntity';
+import { DatasetService } from './DatasetService';
 
 @Controller('datasets')
 export class DatasetController {
@@ -43,22 +50,37 @@ export class DatasetController {
 
   @Get()
   async list(@Query('id') id?: number, @Query('store') store?: string) {
-    const opts = {
-      relations: ['operation', 'media', 'store'],
-      where: {} as Partial<Dataset>,
-    };
     if (store) {
       if (isNaN(parseInt(store)))
         throw error(
           'INVALID_QUERY',
           'Invalid argument format for query parameter "store".',
         );
-      opts.where.store = parseInt(store) as any;
     }
 
-    return this.datasetRepo.find({
-      id: id || undefined,
-      store: store ? { code: store } : undefined,
-    });
+    return this.datasetRepo.find(
+      filterObj({
+        id: id || undefined,
+        store: store ? { code: store } : undefined,
+      }),
+    );
   }
+
+  @Delete(':id')
+  async remove(@Param() params: any) {
+    const id = params.id;
+    if (!id) throw error('BAD_REQUEST', 'Missing id parameter.');
+    await this.datasetService.remove(id);
+    return {};
+  }
+}
+
+function filterObj<T>(obj: T): T {
+  const out = {} as any;
+  Object.entries(obj).forEach(([k, v]) => {
+    if (v !== undefined) {
+      out[k] = v;
+    }
+  });
+  return out;
 }

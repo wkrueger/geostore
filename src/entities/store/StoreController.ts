@@ -16,7 +16,8 @@ export class StoreController {
   @Post()
   async create(@Body() body: CreateStoreDTO) {
     let store = new Store(body);
-    return this.storeRepo.persist(store);
+    await this.storeRepo.persistAndFlush(store);
+    return store;
   }
 
   @Get()

@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { Media } from './MediaEntity';
 import fs from 'fs';
-import { getContext } from 'src/contexts/getContext';
+import { EntityRepository } from 'mikro-orm';
 import mkdirp from 'mkdirp';
-import * as mime from 'mime';
+import multer from 'multer';
+import { InjectRepository } from 'nestjs-mikro-orm';
+import path from 'path';
+import { getContext } from 'src/contexts/getContext';
 import { error } from 'src/_other/error';
 import util from 'util';
-import multer from 'multer';
-import path from 'path';
-import { InjectRepository } from 'nestjs-mikro-orm';
-import { EntityRepository } from 'mikro-orm';
+import { v4 } from 'uuid';
+import { Media } from '../_orm/MediaEntity';
 
 @Injectable()
 export class MediaService {
@@ -23,6 +23,7 @@ export class MediaService {
       throw error('INVALID_CTYPE', 'Content-type not recognized.');
     }
     const record = new Media();
+    record.uuid = v4();
     record.extension = ext;
     await this.mediaRepo.persist(record);
     // await record.reload();

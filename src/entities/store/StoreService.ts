@@ -12,23 +12,22 @@ export class StoreService {
     @InjectRepository(Store) private storeRepo: EntityRepository<Store>,
     @InjectRepository(Dataset) private datasetRepo: EntityRepository<Dataset>,
     private em: EntityManager,
-    private orm: MikroORM,
   ) {}
 
   storeInstances: Record<string, StoreInstance> = {};
 
   getStoreInstance(store: Store) {
     if (this.storeInstances[store.code]) return this.storeInstances[store.code];
-    this.storeInstances[store.code] = new StoreInstance(store, this.orm);
+    this.storeInstances[store.code] = new StoreInstance(store);
     return this.storeInstances[store.code];
   }
 
   async create(i: { code: string }) {
     const store = new Store();
     store.code = i.code;
-    await this.storeRepo.persist(store);
+    await this.storeRepo.persistAndFlush(store);
     const instance = this.getStoreInstance(store);
-    await instance.createTable();
+    await instance.createTable(this.em);
     return store;
   }
 
@@ -57,33 +56,33 @@ export class StoreService {
     dataset: Dataset,
     fn: (helpers: Helpers) => Promise<void>,
   ) {
-    const instance = this.getStoreInstance(dataset.store);
-    try {
-      await instance.tableExists(this.em);
-      await instance.dropIndices();
-      const schema = instance.entitySchema;
-      let that = this;
+    await this.em.transactional(async _em => {
+      const instance = this.getStoreInstance(dataset.store);
+      try {
+        await instance.tableExists(_em);
+        await instance.dropIndices();
 
-      async function insertData(i: {
-        lines: { geom: any; properties: any }[];
-      }) {
-        const values = i.lines.map(line => {
-          return {
-            geometry: line.geom,
-            properties: line.properties,
-            dataset: dataset.id,
-          };
-        });
+        async function insertData(i: {
+          lines: { geom: any; properties: any }[];
+        }) {
+          const values = i.lines.map(line => {
+            return {
+              geometry: line.geom,
+              properties: line.properties,
+              datasetId: dataset.id,
+            };
+          });
 
-        await instance.getQueryBuilder(that.em).insert({ values });
+          await instance.getQueryBuilder(_em).insert(values);
+        }
+        const helpers = { insertData };
+        await fn(helpers);
+        await instance.restoreIndices();
+      } catch (err) {
+        await instance.restoreIndices();
+        throw err;
       }
-      const helpers = { insertData };
-      await fn(helpers);
-      await instance.restoreIndices();
-    } catch (err) {
-      await instance.restoreIndices();
-      throw err;
-    }
+    });
   }
 }
 

@@ -2,31 +2,38 @@ import { Store } from '../_orm/StoreEntity';
 import { EntityManager, EntitySchema, MikroORM } from 'mikro-orm';
 
 export class StoreInstance {
-  constructor(public store: Store, private orm: MikroORM) {}
+  constructor(public store: Store) {}
   tableName = 'instance_' + this.store.code;
 
-  entitySchema = new EntitySchema({
-    name: this.tableName,
-    properties: {
-      id: { type: 'int', primary: true, generated: true },
-      geometry: { type: 'geometry' },
-      properties: { type: 'jsonb' },
-      dataset: { reference: 'm:1', entity: 'Dataset' },
-    },
-  });
+  // entitySchema = new EntitySchema({
+  //   name: this.tableName,
+  //   properties: {
+  //     id: { type: 'int', primary: true },
+  //     geometry: { type: 'geometry' },
+  //     properties: { type: 'jsonb' },
+  //     dataset: { reference: 'm:1', entity: 'Dataset', inversedBy: 'instances' },
+  //   },
+  // });
 
   async tableExists(em: EntityManager) {
     const ctx = em.getTransactionContext()!;
     const exists = await ctx.schema.hasTable(this.tableName);
     if (!exists) {
-      await this.createTable();
+      await this.createTable(em);
     }
   }
 
-  async createTable() {
-    const generator = this.orm.getSchemaGenerator() as any;
-    const meta = this.entitySchema.meta;
-    await generator.createTable(meta);
+  async createTable(em: EntityManager) {
+    const knex = em.getTransactionContext()!;
+    await knex.schema.createTable(this.tableName, table => {
+      table.increments();
+      table.specificType('geometry', 'geometry');
+      table.jsonb('properties');
+      table
+        .integer('datasetId')
+        .references('dataset.id')
+        .onDelete('CASCADE');
+    });
   }
 
   async dropIndices() {}

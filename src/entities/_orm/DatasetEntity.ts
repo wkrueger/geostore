@@ -1,7 +1,14 @@
 import { Store } from './StoreEntity';
 import { Operation } from './OperationEntity';
-import { Media } from '../media/MediaEntity';
-import { Entity, PrimaryKey, ManyToOne, OneToOne, Property } from 'mikro-orm';
+import { Media } from './MediaEntity';
+import {
+  Entity,
+  PrimaryKey,
+  ManyToOne,
+  OneToOne,
+  Property,
+  Cascade,
+} from 'mikro-orm';
 
 @Entity()
 export class Dataset {
@@ -11,7 +18,7 @@ export class Dataset {
   @ManyToOne()
   store!: Store;
 
-  @OneToOne()
+  @OneToOne({ cascade: [Cascade.ALL] })
   operation!: Operation;
 
   @OneToOne()

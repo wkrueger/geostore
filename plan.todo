@@ -12,3 +12,6 @@ Outputs:
 
 Must have:
   - swagger
+
+TODO:
+  - Error responses

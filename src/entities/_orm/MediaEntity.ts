@@ -1,5 +1,6 @@
-import { getContext } from 'src/contexts/getContext';
+import { getContext } from '../../contexts/getContext';
 import { Entity, PrimaryKey, Property, UuidEntity } from 'mikro-orm';
+import { v4 } from 'uuid';
 
 @Entity()
 export class Media implements UuidEntity<any> {

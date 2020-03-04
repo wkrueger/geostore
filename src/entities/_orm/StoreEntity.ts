@@ -18,5 +18,5 @@ export class Store {
     dataset => dataset.store,
     { cascade: [Cascade.ALL] },
   )
-  datasets!: Dataset[];
+  datasets: Dataset[] = [];
 }
