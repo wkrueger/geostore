@@ -17,17 +17,19 @@ import { Store } from './entities/_orm/StoreEntity';
 import { ormConfig } from './mikro-orm.config';
 import { APP_FILTER } from '@nestjs/core';
 import { MainExceptionFilter } from './_other/MainExceptionFilter';
+import { MapfileService } from './entities/mapfile/MapfileService';
 
 @Module({
   imports: [
     MikroOrmModule.forRoot(ormConfig),
-    MikroOrmModule.forFeature({ entities: [Dataset, Media, Operation, Store] }),
+    MikroOrmModule.forFeature({ entities: ormConfig.entities }),
   ],
   controllers: [StoreController, DatasetController],
   providers: [
     MediaService,
     DatasetService,
     StoreService,
+    MapfileService,
     { provide: APP_FILTER, useClass: MainExceptionFilter },
   ],
 })

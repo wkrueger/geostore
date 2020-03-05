@@ -9,6 +9,8 @@ import { InjectRepository, Entity } from 'nestjs-mikro-orm';
 import { EntityRepository, EntityManager } from 'mikro-orm';
 import { TimerTicker } from 'src/_other/TimerTicker';
 import { error } from 'src/_other/error';
+import wkx from 'wkx';
+import _flatten from 'lodash/flatten';
 
 @Injectable()
 export class DatasetService {
@@ -20,6 +22,12 @@ export class DatasetService {
     private em: EntityManager,
   ) {}
 
+  /**
+   * Populates geo data into the database.
+   *
+   * Operation is async (this method returns a scheduled job, not a finished result)
+   * operation status is registered in the Operation entity.
+   */
   async create(i: { store: Store; media: Media }) {
     const dataset = new Dataset();
     const op = new Operation();
@@ -71,9 +79,12 @@ export class DatasetService {
           });
       })
       .then(async () => {
+        const extent = await that.calculateExtent(dataset);
+        dataset.extent = extent.join(' ');
         op.state = OperationState.COMPLETED;
         op.progress = 1;
         await that.operationRepo.persistAndFlush(op);
+        await that.datasetRepo.persistAndFlush(dataset);
         timerTicker.finished();
       })
       .catch(err => {
@@ -96,5 +107,26 @@ export class DatasetService {
       await inst.getQueryBuilder(_em).where({ datasetId: id });
       await this.datasetRepo.removeAndFlush(found);
     });
+  }
+
+  async calculateExtent(dataset: Dataset): Promise<number[]> {
+    await this.datasetRepo.populate(dataset, 'store');
+    const instance = this.storeSvc.getStoreInstance(dataset.store);
+    const knex = instance.getKnex(this.em);
+    const [resp] = await instance
+      .getQueryBuilder(this.em)
+      .where({ datasetId: dataset.id })
+      .select(knex.raw('ST_Extent(geometry) AS bextent'));
+    if (!resp) return Dataset.DEFAULT_EXTENT;
+    const respjson = wkx.Geometry.parse(resp).toGeoJSON() as any;
+    let coords: any[] = _flatten(respjson.coordinates);
+    let coordsGroup = {} as any;
+    coords.forEach((x, idx) => {
+      const tgt = Math.floor(idx / 2);
+      coordsGroup[tgt] = coordsGroup[tgt] || [];
+      coordsGroup[tgt].push(x);
+    });
+    coordsGroup = Array.from(coordsGroup);
+    return coordsGroup;
   }
 }

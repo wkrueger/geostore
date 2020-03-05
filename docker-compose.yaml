@@ -16,6 +16,14 @@ services:
     networks:
       - default
 
+  geostore-mapserver:
+    image: camptocamp/mapserver:7.4
+    container_name: geostore-mapserver
+    volumes:
+      - ./mapfiles/:/etc/mapserver/
+    environment:
+      - 'BUSY_TIMEOUT=20'
+
 volumes:
   geostore_pg:
 

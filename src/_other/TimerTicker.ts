@@ -5,7 +5,6 @@ export class TimerTicker {
   constructor(public interval: number) {}
 
   emit() {
-    console.log('emit timer');
     this.listeners.forEach(l => l());
   }
 

@@ -3,6 +3,8 @@ import { Dataset } from './DatasetEntity';
 
 @Entity()
 export class Store {
+  static DEFAULT_PROJECTION_CODE = 'epsg:4326';
+
   constructor(partial: Partial<Store> = {}) {
     Object.assign(this, partial);
   }
@@ -12,6 +14,12 @@ export class Store {
 
   @Property({ unique: true })
   code!: string;
+
+  @Property()
+  label?: string;
+
+  @Property({ default: Store.DEFAULT_PROJECTION_CODE })
+  projectionCode?: string;
 
   @OneToMany(
     () => Dataset,
