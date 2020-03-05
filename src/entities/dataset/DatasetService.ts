@@ -79,21 +79,22 @@ export class DatasetService {
       .catch(err => {
         console.log('Operation errored', err);
         op.state = OperationState.ERRORED;
-        op.message = String(err);
+        op.message = String(err).substr(0, 254);
         that.operationRepo.persistAndFlush(op);
         timerTicker.finished();
       });
+    await this.datasetRepo.populate(dataset, ['operation']);
     return dataset;
   }
 
   async remove(id: number) {
     await this.em.transactional(async _em => {
-      const found = await this.datasetRepo.findOne({ id });
+      const found = await this.datasetRepo.findOne({ id }, ['store']);
       if (!found) throw error('NOT_FOUND', 'Dataset not found.');
       const store = found.store;
       const inst = this.storeSvc.getStoreInstance(store);
       await inst.getQueryBuilder(_em).where({ datasetId: id });
-      await this.datasetRepo.remove(found);
+      await this.datasetRepo.removeAndFlush(found);
     });
   }
 }

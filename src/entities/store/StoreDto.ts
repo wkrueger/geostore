@@ -1,4 +1,4 @@
-import { IsNotEmpty } from 'class-validator';
+import { IsNotEmpty, Allow } from 'class-validator';
 
 export class CreateStoreDTO {
   @IsNotEmpty()
@@ -6,8 +6,24 @@ export class CreateStoreDTO {
 }
 
 export class StoreQueryDto {
-  @IsNotEmpty()
-  dataset!: number;
+  @Allow()
+  datasetId?: number;
 
-  intersect?: any;
+  @Allow()
+  storeId?: number;
+
+  @Allow()
+  storeCode?: string;
+
+  @Allow()
+  intersectsGeometry?: any;
+
+  @Allow()
+  limit?: number;
+
+  @Allow()
+  offset?: number;
+
+  // @Allow()
+  // withArea?: number
 }

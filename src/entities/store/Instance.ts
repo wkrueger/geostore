@@ -1,8 +1,14 @@
+import { EntityManager } from 'mikro-orm';
+import { error } from 'src/_other/error';
 import { Store } from '../_orm/StoreEntity';
-import { EntityManager, EntitySchema, MikroORM } from 'mikro-orm';
+import kpg from 'knex-postgis';
+import knex from 'knex';
 
 export class StoreInstance {
-  constructor(public store: Store) {}
+  constructor(public store: Store) {
+    if (!this.store.code)
+      throw error('INVALID_STORE_INSTANCE', 'Empty store code.');
+  }
   tableName = 'instance_' + this.store.code;
 
   // entitySchema = new EntitySchema({
@@ -32,6 +38,7 @@ export class StoreInstance {
       table
         .integer('datasetId')
         .references('dataset.id')
+        .index()
         .onDelete('CASCADE');
     });
   }
@@ -47,7 +54,20 @@ export class StoreInstance {
     }
   }
 
+  getKnex(em: EntityManager): knex {
+    if (em.isInTransaction()) {
+      return em.getTransactionContext()!;
+    } else {
+      const conn = em.getDriver().getConnection() as any;
+      return conn.client as knex;
+    }
+  }
+
+  getKpg(em: EntityManager) {
+    return kpg(this.getKnex(em));
+  }
+
   getQueryBuilder(em: EntityManager) {
-    return em.getTransactionContext()?.table(this.tableName)!;
+    return this.getKnex(em).table(this.tableName);
   }
 }

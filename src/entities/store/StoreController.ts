@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
-import { CreateStoreDTO, StoreQueryDto } from './StoreDto';
-import { Store } from '../_orm/StoreEntity';
-import wkx from 'wkx';
-import { StoreService } from './StoreService';
-import { InjectRepository } from 'nestjs-mikro-orm';
 import { EntityRepository } from 'mikro-orm';
+import { InjectRepository } from 'nestjs-mikro-orm';
+import wkx from 'wkx';
+import { Store } from '../_orm/StoreEntity';
+import { CreateStoreDTO, StoreQueryDto } from './StoreDto';
+import { StoreService } from './StoreService';
 
 @Controller('stores')
 export class StoreController {
@@ -22,16 +22,21 @@ export class StoreController {
 
   @Get()
   async list() {
-    return this.storeRepo.findAll();
+    return this.storeRepo.findAll({ populate: ['datasets'] });
   }
 
   @Post('query')
   async query(@Body() query: StoreQueryDto) {
     let intersectGeom: any = undefined;
-    if (query.intersect && typeof query.intersect === 'object') {
-      intersectGeom = wkx.Geometry.parseGeoJSON(query.intersect).toWkt();
+    if (
+      query.intersectsGeometry &&
+      typeof query.intersectsGeometry === 'object'
+    ) {
+      query.intersectsGeometry = wkx.Geometry.parseGeoJSON(
+        query.intersectsGeometry,
+      ).toWkb();
     }
-    const resp = await this.storeSvc.query(query.dataset, intersectGeom);
+    const resp = await this.storeSvc.query(query);
     return resp;
   }
 }

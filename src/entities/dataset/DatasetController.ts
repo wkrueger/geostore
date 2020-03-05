@@ -29,6 +29,8 @@ export class DatasetController {
       Requires a multipart body with fields:
         - storeCode: the string code of the target store
         - file: a geoPackage. First dataset will be taken
+
+      Currently requires and assumes EPSG:4326 projection.
   `),
   })
   @Post()
@@ -63,6 +65,7 @@ export class DatasetController {
         id: id || undefined,
         store: store ? { code: store } : undefined,
       }),
+      { populate: ['operation'] },
     );
   }
 

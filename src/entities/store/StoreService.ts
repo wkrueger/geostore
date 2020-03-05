@@ -5,6 +5,8 @@ import { StoreInstance } from './Instance';
 import { Store } from '../_orm/StoreEntity';
 import { InjectRepository } from 'nestjs-mikro-orm';
 import { EntityRepository, EntityManager, MikroORM } from 'mikro-orm';
+import wkx from 'wkx';
+import { StoreQueryDto } from './StoreDto';
 
 @Injectable()
 export class StoreService {
@@ -40,15 +42,71 @@ export class StoreService {
     await this.storeRepo.remove(found);
   }
 
-  async query(datasetId: number, geometryWkt?: string) {
+  async query({
+    datasetId,
+    storeId,
+    storeCode,
+    intersectsGeometry,
+    limit,
+    offset,
+  }: // withArea,
+  StoreQueryDto) {
+    if (!datasetId && !storeId && !storeCode) {
+      throw error('BAD_REQUEST', 'Either dataset or store id must be set.');
+    }
+
+    if (!datasetId) {
+      const where = storeId
+        ? { store: storeId }
+        : { store: { code: storeCode } };
+      const [found] = await this.datasetRepo.find(where, {
+        orderBy: { createdAt: 'desc' },
+        limit: 1,
+        populate: ['store'],
+      });
+      if (!found)
+        throw error('NO_DATASET', 'No dataset exists for this store.');
+      datasetId = found.id;
+    }
+
     const dataset = await this.datasetRepo.findOne({ id: datasetId });
     if (!dataset) throw error('NOT_FOUND', 'Store not found.');
+
     const instance = this.getStoreInstance(dataset.store);
-    let query = instance.getQueryBuilder(this.em).where({ dataset: datasetId });
-    if (geometryWkt) {
-      query = query.andWhere('ST_Intersects(inst.geometry, ?)', geometryWkt);
+    const knex = instance.getKnex(this.em);
+    let query = instance
+      .getQueryBuilder(this.em)
+      .where({ datasetId: datasetId })
+      .select(
+        'id',
+        'datasetId',
+        'properties',
+        intersectsGeometry
+          ? knex.raw(
+              'ST_AsGeoJSON(ST_Intersection(geometry, ?)) AS geometry',
+              intersectsGeometry,
+            )
+          : knex.raw('ST_ASGeoJSON(geometry) AS geometry'),
+      )
+      .limit(limit || 100);
+    if (offset) {
+      query = query.offset(offset);
     }
-    const results = await query;
+    if (intersectsGeometry) {
+      query = query.andWhere(
+        knex.raw('ST_Intersects(geometry, ?)', intersectsGeometry),
+      );
+    }
+    let results: any[] = await query;
+    results = results.map(result => {
+      const geometry = JSON.parse(result.geometry);
+      (result.properties || {}).dataset = datasetId;
+      return {
+        type: 'Feature',
+        geometry,
+        properties: result.properties,
+      };
+    });
     return results;
   }
 

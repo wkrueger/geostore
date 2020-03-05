@@ -13,6 +13,7 @@ export class MainExceptionFilter implements ExceptionFilter {
   errorFormat(exception: any) {
     const msg = exception?.message || String(exception);
     const code = exception?.code || 'ERROR';
+    console.error(exception);
     return {
       error: {
         message: msg,
