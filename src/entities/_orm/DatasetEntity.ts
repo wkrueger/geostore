@@ -8,6 +8,7 @@ import {
   OneToOne,
   Property,
   Cascade,
+  IdentifiedReference,
 } from 'mikro-orm';
 
 @Entity()
@@ -18,13 +19,13 @@ export class Dataset {
   id!: number;
 
   @ManyToOne()
-  store!: Store;
+  store!: IdentifiedReference<Store>;
 
   @OneToOne({ cascade: [Cascade.ALL] })
-  operation!: Operation;
+  operation!: IdentifiedReference<Operation>;
 
   @OneToOne()
-  media!: Media;
+  media!: IdentifiedReference<Media, 'uuid'>;
 
   @Property({ onCreate: () => new Date() })
   createdAt!: Date;

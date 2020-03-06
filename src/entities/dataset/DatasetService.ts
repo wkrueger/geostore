@@ -5,8 +5,8 @@ import { Operation, OperationState } from '../_orm/OperationEntity';
 import { Store } from '../_orm/StoreEntity';
 import { Dataset } from '../_orm/DatasetEntity';
 import { StoreService } from '../store/StoreService';
-import { InjectRepository, Entity } from 'nestjs-mikro-orm';
-import { EntityRepository, EntityManager } from 'mikro-orm';
+import { InjectRepository } from 'nestjs-mikro-orm';
+import { EntityRepository, EntityManager, wrap } from 'mikro-orm';
 import { TimerTicker } from 'src/_other/TimerTicker';
 import { error } from 'src/_other/error';
 import wkx from 'wkx';
@@ -31,10 +31,15 @@ export class DatasetService {
   async create(i: { store: Store; media: Media }) {
     const dataset = new Dataset();
     const op = new Operation();
-    op.state = OperationState.PENDING;
-    dataset.operation = op;
-    dataset.store = i.store;
-    dataset.media = i.media;
+    wrap(op).assign(
+      {
+        state: OperationState.PENDING,
+        operation: op,
+        store: i.store,
+        media: i.media,
+      },
+      { em: this.em, mergeObjects: true },
+    );
     await this.datasetRepo.persistAndFlush(dataset);
 
     const that = this;
@@ -102,7 +107,7 @@ export class DatasetService {
     await this.em.transactional(async _em => {
       const found = await this.datasetRepo.findOne({ id }, ['store']);
       if (!found) throw error('NOT_FOUND', 'Dataset not found.');
-      const store = found.store;
+      const store = await found.store.load();
       const inst = this.storeSvc.getStoreInstance(store);
       await inst.getQueryBuilder(_em).where({ datasetId: id });
       await this.datasetRepo.removeAndFlush(found);
@@ -111,7 +116,7 @@ export class DatasetService {
 
   async calculateExtent(dataset: Dataset): Promise<number[]> {
     await this.datasetRepo.populate(dataset, 'store');
-    const instance = this.storeSvc.getStoreInstance(dataset.store);
+    const instance = this.storeSvc.getStoreInstance(await dataset.store.load());
     const knex = instance.getKnex(this.em);
     const [resp] = await instance
       .getQueryBuilder(this.em)

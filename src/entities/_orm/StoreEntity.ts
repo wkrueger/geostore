@@ -18,7 +18,7 @@ export class Store {
   @Property()
   label?: string;
 
-  @Property({ default: Store.DEFAULT_PROJECTION_CODE })
+  @Property({ default: `'${Store.DEFAULT_PROJECTION_CODE}'` })
   projectionCode?: string;
 
   @OneToMany(

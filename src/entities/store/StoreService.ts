@@ -56,23 +56,20 @@ export class StoreService {
     }
 
     if (!datasetId) {
-      const where = storeId
-        ? { store: storeId }
-        : { store: { code: storeCode } };
+      const where = storeId ? { store: storeId } : { store: { code: storeCode } };
       const [found] = await this.datasetRepo.find(where, {
         orderBy: { createdAt: 'desc' },
         limit: 1,
         populate: ['store'],
       });
-      if (!found)
-        throw error('NO_DATASET', 'No dataset exists for this store.');
+      if (!found) throw error('NO_DATASET', 'No dataset exists for this store.');
       datasetId = found.id;
     }
 
     const dataset = await this.datasetRepo.findOne({ id: datasetId });
     if (!dataset) throw error('NOT_FOUND', 'Store not found.');
 
-    const instance = this.getStoreInstance(dataset.store);
+    const instance = this.getStoreInstance(await dataset.store.load());
     const knex = instance.getKnex(this.em);
     let query = instance
       .getQueryBuilder(this.em)
@@ -82,10 +79,7 @@ export class StoreService {
         'datasetId',
         'properties',
         intersectsGeometry
-          ? knex.raw(
-              'ST_AsGeoJSON(ST_Intersection(geometry, ?)) AS geometry',
-              intersectsGeometry,
-            )
+          ? knex.raw('ST_AsGeoJSON(ST_Intersection(geometry, ?)) AS geometry', intersectsGeometry)
           : knex.raw('ST_ASGeoJSON(geometry) AS geometry'),
       )
       .limit(limit || 100);
@@ -93,9 +87,7 @@ export class StoreService {
       query = query.offset(offset);
     }
     if (intersectsGeometry) {
-      query = query.andWhere(
-        knex.raw('ST_Intersects(geometry, ?)', intersectsGeometry),
-      );
+      query = query.andWhere(knex.raw('ST_Intersects(geometry, ?)', intersectsGeometry));
     }
     let results: any[] = await query;
     results = results.map(result => {
@@ -110,19 +102,14 @@ export class StoreService {
     return results;
   }
 
-  async dataTransaction(
-    dataset: Dataset,
-    fn: (helpers: Helpers) => Promise<void>,
-  ) {
+  async dataTransaction(dataset: Dataset, fn: (helpers: Helpers) => Promise<void>) {
     await this.em.transactional(async _em => {
-      const instance = this.getStoreInstance(dataset.store);
+      const instance = this.getStoreInstance(await dataset.store.load());
       try {
         await instance.tableExists(_em);
         await instance.dropIndices();
 
-        async function insertData(i: {
-          lines: { geom: any; properties: any }[];
-        }) {
+        async function insertData(i: { lines: { geom: any; properties: any }[] }) {
           const values = i.lines.map(line => {
             return {
               geometry: line.geom,

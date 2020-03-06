@@ -1,10 +1,14 @@
-import { PrimaryKey, Property, OneToOne, Entity } from 'mikro-orm';
+import { PrimaryKey, Property, OneToOne, Entity, IdentifiedReference, ManyToOne } from 'mikro-orm';
 import { Dataset } from './DatasetEntity';
+import { Mapfile } from './MapfileEntity';
 
 @Entity()
-export class Layer {
+export class MapfileLayer {
   @PrimaryKey()
   id!: number;
+
+  @ManyToOne()
+  mapfile!: IdentifiedReference<Mapfile>;
 
   @Property()
   code!: string;
@@ -13,8 +17,8 @@ export class Layer {
   label!: string;
 
   @OneToOne(_ => Dataset)
-  dataset!: Dataset;
+  dataset!: IdentifiedReference<Dataset>;
 
-  @Property({ type: 'text', default: '' })
+  @Property({ type: 'text', default: "''" })
   classes!: string;
 }
