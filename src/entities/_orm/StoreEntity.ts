@@ -16,7 +16,7 @@ export class Store {
   code!: string;
 
   @Property()
-  label?: string;
+  label!: string;
 
   @Property({ default: `'${Store.DEFAULT_PROJECTION_CODE}'` })
   projectionCode?: string;

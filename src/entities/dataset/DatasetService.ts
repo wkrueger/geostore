@@ -9,7 +9,7 @@ import { InjectRepository } from 'nestjs-mikro-orm';
 import { EntityRepository, EntityManager, wrap } from 'mikro-orm';
 import { TimerTicker } from 'src/_other/TimerTicker';
 import { error } from 'src/_other/error';
-import wkx from 'wkx';
+
 import _flatten from 'lodash/flatten';
 
 @Injectable()
@@ -31,7 +31,7 @@ export class DatasetService {
   async create(i: { store: Store; media: Media }) {
     const dataset = new Dataset();
     const op = new Operation();
-    wrap(op).assign(
+    wrap(dataset).assign(
       {
         state: OperationState.PENDING,
         operation: op,
@@ -85,19 +85,25 @@ export class DatasetService {
       })
       .then(async () => {
         const extent = await that.calculateExtent(dataset);
-        dataset.extent = extent.join(' ');
-        op.state = OperationState.COMPLETED;
-        op.progress = 1;
-        await that.operationRepo.persistAndFlush(op);
-        await that.datasetRepo.persistAndFlush(dataset);
+        const d1 = await that.datasetRepo.findOne({ id: dataset.id });
         timerTicker.finished();
+        if (!d1) return;
+        d1.extent = extent.join(' ');
+        const op1 = await that.operationRepo.findOne({ id: op.id });
+        if (!op1) return;
+        op1.state = OperationState.COMPLETED;
+        op1.progress = 1;
+        await that.operationRepo.persistAndFlush(op1);
+        await that.datasetRepo.persistAndFlush(d1);
       })
-      .catch(err => {
+      .catch(async err => {
         console.log('Operation errored', err);
-        op.state = OperationState.ERRORED;
-        op.message = String(err).substr(0, 254);
-        that.operationRepo.persistAndFlush(op);
+        const op1 = await that.operationRepo.findOne({ id: op.id });
         timerTicker.finished();
+        if (!op1) return;
+        op1.state = OperationState.ERRORED;
+        op1.message = String(err).substr(0, 254);
+        that.operationRepo.persistAndFlush(op1);
       });
     await this.datasetRepo.populate(dataset, ['operation']);
     return dataset;
@@ -123,15 +129,11 @@ export class DatasetService {
       .where({ datasetId: dataset.id })
       .select(knex.raw('ST_Extent(geometry) AS bextent'));
     if (!resp) return Dataset.DEFAULT_EXTENT;
-    const respjson = wkx.Geometry.parse(resp).toGeoJSON() as any;
-    let coords: any[] = _flatten(respjson.coordinates);
-    let coordsGroup = {} as any;
-    coords.forEach((x, idx) => {
-      const tgt = Math.floor(idx / 2);
-      coordsGroup[tgt] = coordsGroup[tgt] || [];
-      coordsGroup[tgt].push(x);
-    });
-    coordsGroup = Array.from(coordsGroup);
-    return coordsGroup;
+    const split = resp.bextent
+      .replace(/BOX\((.*)\)/g, '$1')
+      .replace(/,/g, ' ')
+      .split(' ')
+      .map(Number);
+    return split;
   }
 }

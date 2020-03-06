@@ -1,30 +1,22 @@
-import {
-  MiddlewareConsumer,
-  Module,
-  NestModule,
-  RequestMethod,
-} from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { MikroOrmModule } from 'nestjs-mikro-orm';
 import { DatasetController } from './entities/dataset/DatasetController';
 import { DatasetService } from './entities/dataset/DatasetService';
+import { MapfileController } from './entities/mapfile/MapfileController';
+import { MapfileService } from './entities/mapfile/MapfileService';
 import { MediaService } from './entities/media/MediaService';
-import { Operation } from './entities/_orm/OperationEntity';
 import { StoreController } from './entities/store/StoreController';
 import { StoreService } from './entities/store/StoreService';
-import { Dataset } from './entities/_orm/DatasetEntity';
-import { Media } from './entities/_orm/MediaEntity';
-import { Store } from './entities/_orm/StoreEntity';
 import { ormConfig } from './mikro-orm.config';
-import { APP_FILTER } from '@nestjs/core';
 import { MainExceptionFilter } from './_other/MainExceptionFilter';
-import { MapfileService } from './entities/mapfile/MapfileService';
 
 @Module({
   imports: [
     MikroOrmModule.forRoot(ormConfig),
     MikroOrmModule.forFeature({ entities: ormConfig.entities }),
   ],
-  controllers: [StoreController, DatasetController],
+  controllers: [StoreController, DatasetController, MapfileController],
   providers: [
     MediaService,
     DatasetService,

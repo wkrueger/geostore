@@ -3,6 +3,9 @@ import { IsNotEmpty, Allow } from 'class-validator';
 export class CreateStoreDTO {
   @IsNotEmpty()
   code!: string;
+
+  @IsNotEmpty()
+  label!: string;
 }
 
 export class StoreQueryDto {

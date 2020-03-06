@@ -1,20 +1,22 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Mapfile } from '../_orm/MapfileEntity';
-import { InjectRepository } from 'nestjs-mikro-orm';
-import { EntityRepository, wrap, EntityManager } from 'mikro-orm';
+import { Injectable } from '@nestjs/common';
 import handlebars from 'handlebars';
-import { error } from 'src/_other/error';
-import { Store } from '../_orm/StoreEntity';
-import { MapfileLayer } from '../_orm/LayerEntity';
-import { StoreService } from '../store/StoreService';
+import { EntityManager, EntityRepository, wrap } from 'mikro-orm';
+import { InjectRepository } from 'nestjs-mikro-orm';
 import { getContext } from 'src/contexts/getContext';
-import { CreateMapfileDto } from './MapfileDto';
+import { error } from 'src/_other/error';
+import { StoreService } from '../store/StoreService';
+import { MapfileLayer } from '../_orm/LayerEntity';
+import { Mapfile } from '../_orm/MapfileEntity';
+import { Store } from '../_orm/StoreEntity';
+import { CreateMapfileDto, CreateLayerDto } from './MapfileDto';
+import { Dataset } from '../_orm/DatasetEntity';
 
 @Injectable()
 export class MapfileService {
   constructor(
     @InjectRepository(Mapfile) private mapfileRepo: EntityRepository<Mapfile>,
     @InjectRepository(Store) private storeSvc: StoreService,
+    @InjectRepository(Dataset) private datasetRepo: EntityRepository<Dataset>,
     private em: EntityManager,
   ) {}
 
@@ -22,9 +24,32 @@ export class MapfileService {
 
   async create(inp: CreateMapfileDto) {
     const toCreate = new Mapfile();
+    const layers = await Promise.all(
+      inp.layers.map(async dto => {
+        if (!dto.code || !dto.label) {
+          const dataset = await this.em.getRepository(Dataset).findOne({ id: dto.dataset })!;
+          const store = await dataset?.store.load();
+          if (!dto.code) {
+            dto.code = store?.code;
+          }
+          if (!dto.label) {
+            dto.label = store?.label;
+          }
+        }
+        return wrap(new MapfileLayer()).assign(dto, {
+          em: this.em,
+          mergeObjects: true,
+        });
+      }),
+    );
     wrap(toCreate).assign(inp, { em: this.em, mergeObjects: true });
+    toCreate.layers = layers;
     await this.mapfileRepo.persistAndFlush(toCreate);
     return toCreate;
+  }
+
+  async list() {
+    return this.mapfileRepo.findAll({ populate: ['entity'] });
   }
 
   async generateMapfile(mapfile: Mapfile) {

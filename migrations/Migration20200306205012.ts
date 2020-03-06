@@ -1,6 +1,6 @@
 import { Migration } from 'mikro-orm';
 
-export class Migration20200306143947 extends Migration {
+export class Migration20200306205012 extends Migration {
   // prettier-ignore
   async up(): Promise<void> {
     this.addSql('create table "dataset" ("id" serial primary key, "store_id" int4 not null, "operation_id" int4 null, "media_id" varchar(255) not null, "created_at" timestamptz(0) not null, "extent" varchar(255) null);');
@@ -12,12 +12,12 @@ export class Migration20200306143947 extends Migration {
 
     this.addSql('create table "operation" ("id" serial primary key, "state" int2 not null, "progress" float not null default 0, "message" varchar(255) null, "created_at" timestamptz(0) not null, "updated_at" timestamptz(0) not null);');
 
-    this.addSql('create table "store" ("id" serial primary key, "code" varchar(255) not null, "label" varchar(255) null, "projection_code" varchar(255) null default \'epsg:4326\');');
+    this.addSql('create table "store" ("id" serial primary key, "code" varchar(255) not null, "label" varchar(255) not null, "projection_code" varchar(255) null default \'epsg:4326\');');
     this.addSql('alter table "store" add constraint "store_code_unique" unique ("code");');
 
     this.addSql('create table "mapfile" ("id" serial primary key, "label" varchar(255) not null, "custom_template" text null);');
 
-    this.addSql('create table "mapfile_layer" ("id" serial primary key, "mapfile_id" int4 not null, "code" varchar(255) not null, "label" varchar(255) not null, "dataset_id" int4 not null, "classes" text not null default \'\');');
+    this.addSql('create table "mapfile_layer" ("id" serial primary key, "mapfile_id" int4 not null, "code" varchar(255) null, "label" varchar(255) not null, "dataset_id" int4 not null, "classes" text not null default \'\');');
     this.addSql('alter table "mapfile_layer" add constraint "mapfile_layer_dataset_id_unique" unique ("dataset_id");');
 
     this.addSql('alter table "dataset" add constraint "dataset_store_id_foreign" foreign key ("store_id") references "store" ("id") on update cascade;');

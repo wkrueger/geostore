@@ -1,13 +1,11 @@
 import { EntityManager } from 'mikro-orm';
 import { error } from 'src/_other/error';
 import { Store } from '../_orm/StoreEntity';
-import kpg from 'knex-postgis';
 import knex from 'knex';
 
 export class StoreInstance {
   constructor(public store: Store) {
-    if (!this.store.code)
-      throw error('INVALID_STORE_INSTANCE', 'Empty store code.');
+    if (!this.store.code) throw error('INVALID_STORE_INSTANCE', 'Empty store code.');
   }
   tableName = 'instance_' + this.store.code;
 
@@ -58,13 +56,9 @@ export class StoreInstance {
     if (em.isInTransaction()) {
       return em.getTransactionContext()!;
     } else {
-      const conn = em.getDriver().getConnection() as any;
+      const conn = em.getConnection() as any;
       return conn.client as knex;
     }
-  }
-
-  getKpg(em: EntityManager) {
-    return kpg(this.getKnex(em));
   }
 
   getQueryBuilder(em: EntityManager) {

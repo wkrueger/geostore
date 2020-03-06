@@ -11,7 +11,7 @@ export class MapfileLayer {
   mapfile!: IdentifiedReference<Mapfile>;
 
   @Property()
-  code!: string;
+  code?: string;
 
   @Property()
   label!: string;

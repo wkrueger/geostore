@@ -27,14 +27,8 @@ export class StoreController {
 
   @Post('query')
   async query(@Body() query: StoreQueryDto) {
-    let intersectGeom: any = undefined;
-    if (
-      query.intersectsGeometry &&
-      typeof query.intersectsGeometry === 'object'
-    ) {
-      query.intersectsGeometry = wkx.Geometry.parseGeoJSON(
-        query.intersectsGeometry,
-      ).toWkb();
+    if (query.intersectsGeometry && typeof query.intersectsGeometry === 'object') {
+      query.intersectsGeometry = wkx.Geometry.parseGeoJSON(query.intersectsGeometry).toWkb();
     }
     const resp = await this.storeSvc.query(query);
     return resp;
