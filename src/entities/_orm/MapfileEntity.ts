@@ -1,4 +1,4 @@
-import { Entity, OneToMany, PrimaryKey, Property } from 'mikro-orm';
+import { Entity, OneToMany, PrimaryKey, Property, Collection } from 'mikro-orm';
 import { MapfileLayer } from './LayerEntity';
 
 @Entity()
@@ -12,8 +12,9 @@ export class Mapfile {
   @OneToMany(
     _ => MapfileLayer,
     layer => layer.mapfile,
+    { orphanRemoval: true },
   )
-  layers: MapfileLayer[] = [];
+  layers = new Collection<MapfileLayer>(this);
 
   @Property({ type: 'text' })
   customTemplate?: string;

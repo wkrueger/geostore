@@ -16,7 +16,7 @@ export class MapfileLayer {
   @Property()
   label!: string;
 
-  @OneToOne(_ => Dataset)
+  @OneToOne({ owner: true })
   dataset!: IdentifiedReference<Dataset>;
 
   @Property({ type: 'text', default: "''" })

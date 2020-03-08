@@ -4,27 +4,23 @@ import { EntityManager, EntityRepository, wrap } from 'mikro-orm';
 import { InjectRepository } from 'nestjs-mikro-orm';
 import { getContext } from 'src/contexts/getContext';
 import { error } from 'src/_other/error';
-import { StoreService } from '../store/StoreService';
+import { Dataset } from '../_orm/DatasetEntity';
 import { MapfileLayer } from '../_orm/LayerEntity';
 import { Mapfile } from '../_orm/MapfileEntity';
 import { Store } from '../_orm/StoreEntity';
-import { CreateMapfileDto, CreateLayerDto } from './MapfileDto';
-import { Dataset } from '../_orm/DatasetEntity';
+import { CreateMapfileDto } from './MapfileDto';
 
 @Injectable()
 export class MapfileService {
   constructor(
     @InjectRepository(Mapfile) private mapfileRepo: EntityRepository<Mapfile>,
-    @InjectRepository(Store) private storeSvc: StoreService,
-    @InjectRepository(Dataset) private datasetRepo: EntityRepository<Dataset>,
     private em: EntityManager,
   ) {}
 
   compiledTemplate = handlebars.compile(defaultTemplate);
 
-  async create(inp: CreateMapfileDto) {
-    const toCreate = new Mapfile();
-    const layers = await Promise.all(
+  async create(inp: CreateMapfileDto, toCreate = this.mapfileRepo.create({})) {
+    const layers: MapfileLayer[] = await Promise.all(
       inp.layers.map(async dto => {
         if (!dto.code || !dto.label) {
           const dataset = await this.em.getRepository(Dataset).findOne({ id: dto.dataset })!;
@@ -36,27 +32,25 @@ export class MapfileService {
             dto.label = store?.label;
           }
         }
-        return wrap(new MapfileLayer()).assign(dto, {
-          em: this.em,
-          mergeObjects: true,
-        });
+        return wrap(new MapfileLayer()).assign({ ...dto, mapfile: toCreate.id }, { em: this.em });
       }),
     );
-    wrap(toCreate).assign(inp, { em: this.em, mergeObjects: true });
-    toCreate.layers = layers;
+    wrap(toCreate).assign({ ...inp, layers }, { em: this.em });
+    await toCreate.layers.init();
+    toCreate.layers.set(layers);
     await this.mapfileRepo.persistAndFlush(toCreate);
     return toCreate;
   }
 
   async list() {
-    return this.mapfileRepo.findAll({ populate: ['entity'] });
+    return this.mapfileRepo.findAll({ populate: ['layers'] });
   }
 
-  async generateMapfile(mapfile: Mapfile) {
+  async render(mapfile: Mapfile) {
+    await mapfile.layers.init(['dataset', 'dataset.store']);
     if (!mapfile.layers.length) throw error('NO_LAYERS', 'No layers on mapfile.');
-
-    await this.mapfileRepo.populate(mapfile, ['layers']);
     const extents = mapfile.layers
+      .getItems()
       .map(layer => layer.dataset.getProperty('extent'))
       .filter(Boolean);
     const extent = this._mergeExtents(
@@ -72,12 +66,12 @@ export class MapfileService {
 
     const mapped: MapfileTemplate = {
       label: mapfile.label,
-      extent,
+      extent: this._formatExtent(extent),
       projectionCode,
-      layers: mapfile.layers.map(layer => {
+      layers: mapfile.layers.getItems().map(layer => {
         return {
           code: layer.code,
-          extent: layer.dataset.getProperty('extent'),
+          extent: this._formatExtent(layer.dataset.getProperty('extent')),
           connection: this._getConnection(),
           query: this._getQuery(layer),
           label: layer.label,
@@ -88,6 +82,14 @@ export class MapfileService {
     };
 
     return this._getTemplate(mapfile)(mapped);
+  }
+
+  _formatExtent(extent: string = '') {
+    return extent
+      .split(' ')
+      .map(Number)
+      .map(x => x.toFixed(2))
+      .join(' ');
   }
 
   _getTemplate(mapfile: Mapfile) {
@@ -108,8 +110,7 @@ export class MapfileService {
 
   _getQuery(layer: MapfileLayer) {
     const store = layer.dataset.getProperty('store').unwrap();
-    const inst = this.storeSvc.getStoreInstance(store);
-    return `geometry from ${inst.store} USING srid=4326 USING unique id`;
+    return `geometry from ${store.code} USING srid=4326 USING unique id`;
   }
 
   _getConnection() {
@@ -135,14 +136,13 @@ interface MapfileTemplate {
   //helpers
 }
 
-const defaultTemplate = `
-MAP
+const defaultTemplate = `MAP
 
   NAME {{ label }}
   EXTENT {{ extent }}
 
   PROJECTION
-  "init={{ projectionCode }}
+    "init={{ projectionCode }}"
   END
 
   OUTPUTFORMAT
@@ -172,8 +172,8 @@ MAP
     TEMPLATE 'OpenLayers3'
     EXTENT {{ extent }}
     CONNECTIONTYPE POSTGIS
-    CONNECTION "{{ connection }}"
-    DATA '{{ query }}"
+    CONNECTION "{{{ connection }}}"
+    DATA '{{{ query }}}"
     METADATA
       'wms_title' '{{ label }}'
       'wms_enable_request' '*'

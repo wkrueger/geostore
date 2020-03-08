@@ -1,5 +1,5 @@
 import { Allow, IsNotEmpty, ValidateNested } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import { Type } from 'class-transformer';
 
 export class CreateMapfileDto {
   @IsNotEmpty()
