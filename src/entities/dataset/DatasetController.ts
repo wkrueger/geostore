@@ -1,13 +1,5 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Query,
-  Req,
-  Delete,
-  Param,
-} from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Post, Query, Req, Delete, Param } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { EntityRepository } from 'mikro-orm';
 import { InjectRepository } from 'nestjs-mikro-orm';
 import { error } from 'src/_other/error';
@@ -16,6 +8,7 @@ import { Dataset } from '../_orm/DatasetEntity';
 import { Store } from '../_orm/StoreEntity';
 import { DatasetService } from './DatasetService';
 
+@ApiTags('datasets')
 @Controller('datasets')
 export class DatasetController {
   constructor(
@@ -38,8 +31,7 @@ export class DatasetController {
     const storeCode: string = request.body.storeCode;
     if (!storeCode) throw error('BAD_REQUEST', 'storeCode parameter missing.');
     const store = await this.storeRepo.findOne({ code: storeCode });
-    if (!store)
-      throw error('STORE_NOT_FOUND', 'Store with this code not found.');
+    if (!store) throw error('STORE_NOT_FOUND', 'Store with this code not found.');
     if (!request.media) {
       throw error('UPLOAD_FAILED', 'Upload failed.');
     }
@@ -54,10 +46,7 @@ export class DatasetController {
   async list(@Query('id') id?: number, @Query('store') store?: string) {
     if (store) {
       if (isNaN(parseInt(store)))
-        throw error(
-          'INVALID_QUERY',
-          'Invalid argument format for query parameter "store".',
-        );
+        throw error('INVALID_QUERY', 'Invalid argument format for query parameter "store".');
     }
 
     return this.datasetRepo.find(

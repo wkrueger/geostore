@@ -23,6 +23,8 @@ services:
       - ./mapfiles/:/etc/mapserver/
     environment:
       - 'BUSY_TIMEOUT=20'
+    ports:
+      - '8080:80'
 
 volumes:
   geostore_pg:

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Res, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Res, Put, Delete } from '@nestjs/common';
 import { EntityRepository } from 'mikro-orm';
 import { InjectRepository } from 'nestjs-mikro-orm';
 import { error } from 'src/_other/error';
@@ -40,5 +40,11 @@ export class MapfileController {
     const txt = await this.mapfileSvc.render(found);
     res.setHeader('content-type', 'text/plain; charset=utf8');
     res.send(txt);
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: number) {
+    id = Number(id);
+    await this.mapfileRepo.remove({ id });
   }
 }

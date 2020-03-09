@@ -9,7 +9,11 @@ import { MapfileLayer } from '../_orm/LayerEntity';
 import { Mapfile } from '../_orm/MapfileEntity';
 import { Store } from '../_orm/StoreEntity';
 import { CreateMapfileDto } from './MapfileDto';
+import { ApiTags } from '@nestjs/swagger';
+import fs from 'fs';
+import { promisify } from 'util';
 
+@ApiTags('mapfiles')
 @Injectable()
 export class MapfileService {
   constructor(
@@ -36,7 +40,9 @@ export class MapfileService {
       }),
     );
     wrap(toCreate).assign({ ...inp, layers }, { em: this.em });
-    await toCreate.layers.init();
+    if (toCreate.id) {
+      await toCreate.layers.init();
+    }
     toCreate.layers.set(layers);
     await this.mapfileRepo.persistAndFlush(toCreate);
     return toCreate;
@@ -81,7 +87,15 @@ export class MapfileService {
       }),
     };
 
-    return this._getTemplate(mapfile)(mapped);
+    const merged = this._getTemplate(mapfile)(mapped);
+    await this.persist(mapfile, merged);
+    return merged;
+  }
+
+  async persist(mapfile: Mapfile, content: string) {
+    const code = String(mapfile.id);
+    const path = getContext().pathFromRoot('mapfiles', code + '.map');
+    await promisify(fs.writeFile)(path, content);
   }
 
   _formatExtent(extent: string = '') {
@@ -110,12 +124,12 @@ export class MapfileService {
 
   _getQuery(layer: MapfileLayer) {
     const store = layer.dataset.getProperty('store').unwrap();
-    return `geometry from ${store.code} USING srid=4326 USING unique id`;
+    return `geometry from instance_${store.code} USING srid=4326 USING unique id`;
   }
 
   _getConnection() {
     const ctx = getContext();
-    return `host=${ctx.db.host} port=${ctx.db.port} dbname=${ctx.db.database} user=${ctx.db.user} password=${ctx.db.password}`;
+    return `host=geostore-postgres port=${ctx.db.port} dbname=${ctx.db.database} user=${ctx.db.user} password=${ctx.db.password}`;
   }
 }
 
@@ -138,7 +152,7 @@ interface MapfileTemplate {
 
 const defaultTemplate = `MAP
 
-  NAME {{ label }}
+  NAME "{{ label }}"
   EXTENT {{ extent }}
 
   PROJECTION
@@ -157,7 +171,7 @@ const defaultTemplate = `MAP
     QUERYFORMAT "geojson"
     METADATA
       "wms_title" "{{ label }}"
-      "wms_srs" "{{ projectionCode }}"
+      "wms_srs" "EPSG:3857 EPSG:4326"
       "wms_enable_request" "*"
       "wms_getmap_formatlist" "image/png"
       "wms_feature_info_mime_type" "application/json; subtype=geojson;"
@@ -173,7 +187,7 @@ const defaultTemplate = `MAP
     EXTENT {{ extent }}
     CONNECTIONTYPE POSTGIS
     CONNECTION "{{{ connection }}}"
-    DATA '{{{ query }}}"
+    DATA '{{{ query }}}'
     METADATA
       'wms_title' '{{ label }}'
       'wms_enable_request' '*'
@@ -185,7 +199,8 @@ const defaultTemplate = `MAP
       'init={{ projection }}'
     END
 
-    {{{ classes }}}
+{{{ classes }}}
+
   END
 
   {{/each}}

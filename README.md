@@ -1,9 +1,14 @@
 # geostore
 
+- Upload geometry files into PostGIS
+- Expose a query endpoint for loaded data (by geometry intersection or by indexed feature keys)
+- Expose WMS/WM\* endpoints for loaded data
+
 ## Initial setup
 
-`docker-compose` file has setup for Postgresql database dependency.
+`docker-compose` file has setup for Postgresql database dependency and mapserver.
 
+- docker-compose up
 - yarn
 - yarn start
 

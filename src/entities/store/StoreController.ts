@@ -1,11 +1,13 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Delete, Param } from '@nestjs/common';
 import { EntityRepository } from 'mikro-orm';
 import { InjectRepository } from 'nestjs-mikro-orm';
 import wkx from 'wkx';
 import { Store } from '../_orm/StoreEntity';
 import { CreateStoreDTO, StoreQueryDto } from './StoreDto';
 import { StoreService } from './StoreService';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('stores')
 @Controller('stores')
 export class StoreController {
   constructor(
@@ -32,5 +34,11 @@ export class StoreController {
     }
     const resp = await this.storeSvc.query(query);
     return resp;
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: number) {
+    id = Number(id);
+    await this.storeRepo.remove({ id });
   }
 }

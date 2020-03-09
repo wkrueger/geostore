@@ -1,4 +1,12 @@
-import { PrimaryKey, Property, OneToOne, Entity, IdentifiedReference, ManyToOne } from 'mikro-orm';
+import {
+  PrimaryKey,
+  Property,
+  OneToOne,
+  Entity,
+  IdentifiedReference,
+  ManyToOne,
+  Cascade,
+} from 'mikro-orm';
 import { Dataset } from './DatasetEntity';
 import { Mapfile } from './MapfileEntity';
 
@@ -7,7 +15,7 @@ export class MapfileLayer {
   @PrimaryKey()
   id!: number;
 
-  @ManyToOne()
+  @ManyToOne({ cascade: [Cascade.ALL] })
   mapfile!: IdentifiedReference<Mapfile>;
 
   @Property()
