@@ -1,5 +1,7 @@
 # geostore
 
+Objectives (wip)
+
 - Upload geometry files into PostGIS
 - Expose a query endpoint for loaded data (by geometry intersection or by indexed feature keys)
 - Expose WMS/WM\* endpoints for loaded data
