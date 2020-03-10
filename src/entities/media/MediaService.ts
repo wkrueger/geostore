@@ -5,17 +5,15 @@ import mkdirp from 'mkdirp';
 import multer from 'multer';
 import { InjectRepository } from 'nestjs-mikro-orm';
 import path from 'path';
-import { getContext } from 'src/contexts/getContext';
-import { error } from 'src/_other/error';
+import { getContext } from '../../contexts/getContext';
+import { error } from '../../_other/error';
 import util from 'util';
 import { v4 } from 'uuid';
 import { Media } from '../_orm/MediaEntity';
 
 @Injectable()
 export class MediaService {
-  constructor(
-    @InjectRepository(Media) private mediaRepo: EntityRepository<Media>,
-  ) {}
+  constructor(@InjectRepository(Media) private mediaRepo: EntityRepository<Media>) {}
 
   async create(i: { stream: fs.ReadStream; fileName: string }) {
     let ext = path.parse(i.fileName).ext.substr(1);
@@ -31,9 +29,7 @@ export class MediaService {
     const ctx = getContext();
     await mkdirp(ctx.pathFromRoot('media'));
     await new Promise((resolve, reject) => {
-      const write = fs.createWriteStream(
-        ctx.pathFromRoot('media', record.uuid + '.' + ext),
-      );
+      const write = fs.createWriteStream(ctx.pathFromRoot('media', record.uuid + '.' + ext));
       i.stream.pipe(write);
       write.on('finish', resolve);
       write.on('error', reject);
@@ -49,9 +45,7 @@ export class MediaService {
 
     const ext = found.extension;
     const ctx = getContext();
-    await util.promisify(fs.unlink)(
-      ctx.pathFromRoot('media', found.uuid + '.' + ext),
-    );
+    await util.promisify(fs.unlink)(ctx.pathFromRoot('media', found.uuid + '.' + ext));
 
     await this.mediaRepo.remove(found);
   }

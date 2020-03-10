@@ -18,7 +18,7 @@ export class Dataset {
   @PrimaryKey()
   id!: number;
 
-  @ManyToOne()
+  @ManyToOne({ cascade: [Cascade.REMOVE] })
   store!: IdentifiedReference<Store>;
 
   @OneToOne({ cascade: [Cascade.ALL] })

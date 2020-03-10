@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { error } from 'src/_other/error';
+import { error } from '../../_other/error';
 import { Dataset } from '../_orm/DatasetEntity';
 import { StoreInstance } from './Instance';
 import { Store } from '../_orm/StoreEntity';

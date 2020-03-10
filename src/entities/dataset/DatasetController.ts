@@ -2,8 +2,8 @@ import { Controller, Get, Post, Query, Req, Delete, Param } from '@nestjs/common
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { EntityRepository } from 'mikro-orm';
 import { InjectRepository } from 'nestjs-mikro-orm';
-import { error } from 'src/_other/error';
-import { trimDocs } from 'src/_other/trimDocs';
+import { error } from '../../_other/error';
+import { trimDocs } from '../../_other/trimDocs';
 import { Dataset } from '../_orm/DatasetEntity';
 import { Store } from '../_orm/StoreEntity';
 import { DatasetService } from './DatasetService';

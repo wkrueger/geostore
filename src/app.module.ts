@@ -10,13 +10,14 @@ import { StoreController } from './entities/store/StoreController';
 import { StoreService } from './entities/store/StoreService';
 import { ormConfig } from './mikro-orm.config';
 import { MainExceptionFilter } from './_other/MainExceptionFilter';
+import { MigrationsController } from './migrations';
 
 @Module({
   imports: [
     MikroOrmModule.forRoot(ormConfig),
     MikroOrmModule.forFeature({ entities: ormConfig.entities }),
   ],
-  controllers: [StoreController, DatasetController, MapfileController],
+  controllers: [StoreController, DatasetController, MapfileController, MigrationsController],
   providers: [
     MediaService,
     DatasetService,

@@ -1,5 +1,5 @@
 import { EntityManager } from 'mikro-orm';
-import { error } from 'src/_other/error';
+import { error } from '../../_other/error';
 import { Store } from '../_orm/StoreEntity';
 import knex from 'knex';
 

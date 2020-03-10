@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Res, Put, Delete } from '@nestjs/common';
 import { EntityRepository } from 'mikro-orm';
 import { InjectRepository } from 'nestjs-mikro-orm';
-import { error } from 'src/_other/error';
+import { error } from '../../_other/error';
 import { Mapfile } from '../_orm/MapfileEntity';
 import { CreateMapfileDto } from './MapfileDto';
 import { MapfileService } from './MapfileService';

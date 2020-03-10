@@ -1,16 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { GpkgReader } from 'src/_other/GpkgReader';
+import { EntityManager, EntityRepository, wrap } from 'mikro-orm';
+import { InjectRepository } from 'nestjs-mikro-orm';
+import { error } from '../../_other/error';
+import { GpkgReader } from '../../_other/GpkgReader';
+import { TimerTicker } from '../../_other/TimerTicker';
+import { StoreService } from '../store/StoreService';
+import { Dataset } from '../_orm/DatasetEntity';
 import { Media } from '../_orm/MediaEntity';
 import { Operation, OperationState } from '../_orm/OperationEntity';
 import { Store } from '../_orm/StoreEntity';
-import { Dataset } from '../_orm/DatasetEntity';
-import { StoreService } from '../store/StoreService';
-import { InjectRepository } from 'nestjs-mikro-orm';
-import { EntityRepository, EntityManager, wrap } from 'mikro-orm';
-import { TimerTicker } from 'src/_other/TimerTicker';
-import { error } from 'src/_other/error';
-
-import _flatten from 'lodash/flatten';
 
 @Injectable()
 export class DatasetService {
