@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Res, Put, Delete } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Res, Put, Delete, Query } from '@nestjs/common';
 import { EntityRepository } from 'mikro-orm';
 import { InjectRepository } from 'nestjs-mikro-orm';
 import { error } from '../../_other/error';
@@ -6,7 +6,10 @@ import { Mapfile } from '../_orm/MapfileEntity';
 import { CreateMapfileDto } from './MapfileDto';
 import { MapfileService } from './MapfileService';
 import { Response } from 'express';
+import { filterWhereObject } from '../../_other/filterWhereObject';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('mapfiles')
 @Controller('mapfiles')
 export class MapfileController {
   constructor(
@@ -20,8 +23,9 @@ export class MapfileController {
   }
 
   @Get()
-  async list() {
-    return this.mapfileSvc.list();
+  async list(@Query('id') id: number) {
+    id = parseInt(id as any);
+    return this.mapfileSvc.list(filterWhereObject({ id }));
   }
 
   @Put(':id')

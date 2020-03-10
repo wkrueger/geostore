@@ -61,6 +61,7 @@ export class MediaService {
           });
           cb(null);
         } catch (err) {
+          console.log('upload error', err);
           cb(err);
         }
       },
@@ -72,6 +73,7 @@ export class MediaService {
   }
 
   middleware = multer({ storage: this.createMulterStorage() }).single('file');
+
   createMulterMiddleware() {
     return (req, res, next) => {
       return this.middleware(req, res, next);

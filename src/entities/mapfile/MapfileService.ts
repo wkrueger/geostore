@@ -48,8 +48,8 @@ export class MapfileService {
     return toCreate;
   }
 
-  async list() {
-    return this.mapfileRepo.findAll({ populate: ['layers'] });
+  async list(filters: { id?: number }) {
+    return this.mapfileRepo.find(filters, { populate: ['layers'] });
   }
 
   async render(mapfile: Mapfile) {

@@ -1,6 +1,6 @@
 import { IsNotEmpty, Allow } from 'class-validator';
 
-export class CreateStoreDTO {
+export class CreateStoreDto {
   @IsNotEmpty()
   code!: string;
 

@@ -3,7 +3,7 @@ import { EntityRepository } from 'mikro-orm';
 import { InjectRepository } from 'nestjs-mikro-orm';
 import wkx from 'wkx';
 import { Store } from '../_orm/StoreEntity';
-import { CreateStoreDTO, StoreQueryDto } from './StoreDto';
+import { CreateStoreDto, StoreQueryDto } from './StoreDto';
 import { StoreService } from './StoreService';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -16,7 +16,7 @@ export class StoreController {
   ) {}
 
   @Post()
-  async create(@Body() body: CreateStoreDTO) {
+  async create(@Body() body: CreateStoreDto) {
     let store = new Store(body);
     await this.storeRepo.persistAndFlush(store);
     return store;
