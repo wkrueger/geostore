@@ -18,7 +18,7 @@ export class Dataset {
   @PrimaryKey()
   id!: number;
 
-  @ManyToOne({ cascade: [Cascade.REMOVE] })
+  @ManyToOne()
   store!: IdentifiedReference<Store>;
 
   @OneToOne({ cascade: [Cascade.ALL] })
@@ -32,4 +32,7 @@ export class Dataset {
 
   @Property()
   extent?: string;
+
+  @Property()
+  notes?: string;
 }

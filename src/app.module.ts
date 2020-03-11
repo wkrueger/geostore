@@ -11,6 +11,7 @@ import { StoreService } from './entities/store/StoreService';
 import { ormConfig } from './mikro-orm.config';
 import { MainExceptionFilter } from './_other/MainExceptionFilter';
 import { MigrationsController } from './migrations';
+import { MikroORM } from 'mikro-orm';
 
 @Module({
   imports: [
@@ -27,11 +28,23 @@ import { MigrationsController } from './migrations';
   ],
 })
 export class AppModule implements NestModule {
-  constructor(private mediaService: MediaService) {}
+  constructor(private mediaService: MediaService, orm: MikroORM) {
+    orm
+      .getMigrator()
+      .getPendingMigrations()
+      .then(migrations => {
+        if (migrations.length) {
+          console.warn('There are', migrations.length, 'pending migrations.');
+        }
+      });
+  }
 
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(this.mediaService.createMulterMiddleware())
-      .forRoutes({ path: 'datasets', method: RequestMethod.POST });
+      .forRoutes(
+        { path: 'datasets', method: RequestMethod.POST },
+        { path: 'media', method: RequestMethod.POST },
+      );
   }
 }

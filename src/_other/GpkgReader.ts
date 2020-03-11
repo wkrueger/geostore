@@ -1,6 +1,7 @@
 import knex from 'knex';
 import through from 'through2';
-import wkx from 'wkx';
+import fs from 'fs';
+import util from 'util';
 
 /*
 b5 fd
@@ -66,9 +67,12 @@ export class GpkgReader {
     }
     const sources = await srcQuery;
     const selectedSource = sources[0];
-    const [{ count }] = await conn
-      .table(selectedSource.table_name)
-      .count('* AS count');
+    const stat = await util.promisify(fs.stat)(absFilePath);
+    let count = null as any;
+    if (stat.size < 10 ** 9 /* 1 gb */) {
+      const resp: any[] = await conn.table(selectedSource.table_name).count('* AS count');
+      count = resp[0].count;
+    }
     const query = conn.table(selectedSource.table_name).stream();
     await new Promise((resolve, reject) => {
       const processor = through(

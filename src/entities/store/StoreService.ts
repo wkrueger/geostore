@@ -6,7 +6,7 @@ import { Store } from '../_orm/StoreEntity';
 import { InjectRepository } from 'nestjs-mikro-orm';
 import { EntityRepository, EntityManager, MikroORM } from 'mikro-orm';
 import wkx from 'wkx';
-import { StoreQueryDto } from './StoreDto';
+import { StoreQueryDto, CreateStoreDto } from './StoreDto';
 
 @Injectable()
 export class StoreService {
@@ -24,12 +24,16 @@ export class StoreService {
     return this.storeInstances[store.code];
   }
 
-  async create(i: { code: string }) {
-    const store = new Store();
-    store.code = i.code;
-    await this.storeRepo.persistAndFlush(store);
-    const instance = this.getStoreInstance(store);
-    await instance.createTable(this.em);
+  async create(i: CreateStoreDto) {
+    const store = await this.em.transactional(async _em => {
+      const store = new Store();
+      store.code = i.code;
+      store.label = i.label;
+      await this.storeRepo.persistAndFlush(store);
+      const instance = this.getStoreInstance(store);
+      await instance.tableExists(_em);
+      return store;
+    });
     return store;
   }
 

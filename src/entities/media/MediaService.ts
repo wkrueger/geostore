@@ -50,6 +50,10 @@ export class MediaService {
     await this.mediaRepo.remove(found);
   }
 
+  getOne(uuid: string) {
+    return this.mediaRepo.findOne({ uuid });
+  }
+
   createMulterStorage() {
     const that = this;
     return {

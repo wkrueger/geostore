@@ -9,26 +9,16 @@ export class StoreInstance {
   }
   tableName = 'instance_' + this.store.code;
 
-  // entitySchema = new EntitySchema({
-  //   name: this.tableName,
-  //   properties: {
-  //     id: { type: 'int', primary: true },
-  //     geometry: { type: 'geometry' },
-  //     properties: { type: 'jsonb' },
-  //     dataset: { reference: 'm:1', entity: 'Dataset', inversedBy: 'instances' },
-  //   },
-  // });
-
   async tableExists(em: EntityManager) {
-    const ctx = em.getTransactionContext()!;
-    const exists = await ctx.schema.hasTable(this.tableName);
+    const knex = this.getKnex(em);
+    const exists = await knex.schema.hasTable(this.tableName);
     if (!exists) {
       await this.createTable(em);
     }
   }
 
   async createTable(em: EntityManager) {
-    const knex = em.getTransactionContext()!;
+    const knex = this.getKnex(em);
     await knex.schema.createTable(this.tableName, table => {
       table.increments();
       table.specificType('geometry', 'geometry');

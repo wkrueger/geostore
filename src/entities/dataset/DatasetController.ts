@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Req, Delete, Param } from '@nestjs/common';
+import { Controller, Get, Post, Query, Req, Delete, Param, Body } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { EntityRepository } from 'mikro-orm';
 import { InjectRepository } from 'nestjs-mikro-orm';
@@ -7,6 +7,8 @@ import { trimDocs } from '../../_other/trimDocs';
 import { Dataset } from '../_orm/DatasetEntity';
 import { Store } from '../_orm/StoreEntity';
 import { DatasetService } from './DatasetService';
+import { MediaService } from '../media/MediaService';
+import { CreateFromMediaDto } from './DatasetDto';
 
 @ApiTags('datasets')
 @Controller('datasets')
@@ -15,13 +17,14 @@ export class DatasetController {
     private datasetService: DatasetService,
     @InjectRepository(Store) private storeRepo: EntityRepository<Store>,
     @InjectRepository(Dataset) private datasetRepo: EntityRepository<Dataset>,
+    private mediaSvc: MediaService,
   ) {}
 
   @ApiOperation({
     description: trimDocs(`
       Requires a multipart body with fields:
         - storeCode: the string code of the target store
-        - file: a geoPackage. First dataset will be taken
+        - file: a geoPackage. First dataset will be taken. Must have name metadata.
 
       Currently requires and assumes EPSG:4326 projection.
   `),
@@ -35,10 +38,27 @@ export class DatasetController {
     if (!request.media) {
       throw error('UPLOAD_FAILED', 'Upload failed.');
     }
+    const notes = request.body.notes || '';
     const dataset = await this.datasetService.create({
       media: request.media,
       store,
+      notes,
     });
+    return dataset;
+  }
+
+  @ApiOperation({
+    description: trimDocs(`
+      Populates a dataset from an already uploaded media file.
+    `),
+  })
+  @Post('/from-media')
+  async createFromMedia(@Body() body: CreateFromMediaDto) {
+    const media = await this.mediaSvc.getOne(body.mediaUuid);
+    const store = await this.storeRepo.findOne({ code: body.storeCode });
+    if (!media) throw error('BAD_REQUEST', 'Media not found.');
+    if (!store) throw error('BAD_REQUEST', 'Store not found.');
+    const dataset = await this.datasetService.create({ media, store, notes: body.notes || '' });
     return dataset;
   }
 
@@ -59,8 +79,8 @@ export class DatasetController {
   }
 
   @Delete(':id')
-  async remove(@Param() params: any) {
-    const id = params.id;
+  async remove(@Param('id') id: number) {
+    id = Number(id);
     if (!id) throw error('BAD_REQUEST', 'Missing id parameter.');
     await this.datasetService.remove(id);
     return {};

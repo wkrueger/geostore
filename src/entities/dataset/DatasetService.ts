@@ -26,7 +26,7 @@ export class DatasetService {
    * Operation is async (this method returns a scheduled job, not a finished result)
    * operation status is registered in the Operation entity.
    */
-  async create(i: { store: Store; media: Media }) {
+  async create(i: { store: Store; media: Media; notes: string }) {
     const dataset = new Dataset();
     const op = new Operation();
     wrap(dataset).assign(
@@ -35,6 +35,7 @@ export class DatasetService {
         operation: op,
         store: i.store,
         media: i.media,
+        notes: i.notes || '',
       },
       { em: this.em, mergeObjects: true },
     );
@@ -42,12 +43,12 @@ export class DatasetService {
 
     const that = this;
     let count = 0;
-    let total = 1;
+    let total = null as any;
     let batch = [] as any[];
     const timerTicker = new TimerTicker(2000);
     timerTicker.onTick(() => {
       console.log('Inserted', count);
-      op.progress = count / total;
+      op.progress = total ? count / total : count;
       that.operationRepo.persistAndFlush(op);
     });
     that.storeSvc
