@@ -37,6 +37,6 @@ export class StoreController {
   @Delete(':id')
   async remove(@Param('id') id: number) {
     id = Number(id);
-    await this.storeRepo.remove({ id });
+    await this.storeSvc.remove({ id });
   }
 }

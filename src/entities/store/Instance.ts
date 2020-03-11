@@ -26,7 +26,7 @@ export class StoreInstance {
       table
         .integer('datasetId')
         .references('dataset.id')
-        .index()
+        // .index()
         .onDelete('CASCADE');
     });
   }
@@ -36,9 +36,9 @@ export class StoreInstance {
   async restoreIndices() {}
 
   async removeTable(em: EntityManager) {
-    const ctx = em.getTransactionContext();
-    if (await ctx?.schema.hasTable(this.tableName)) {
-      await ctx?.schema.dropTable(this.tableName);
+    const knex = this.getKnex(em);
+    if (await knex.schema.hasTable(this.tableName)) {
+      await knex.schema.dropTable(this.tableName);
     }
   }
 

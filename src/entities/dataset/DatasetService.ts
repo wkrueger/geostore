@@ -43,44 +43,34 @@ export class DatasetService {
 
     const that = this;
     let count = 0;
+    let prev = 0;
     let total = null as any;
-    let batch = [] as any[];
     const timerTicker = new TimerTicker(2000);
     timerTicker.onTick(() => {
-      console.log('Inserted', count);
+      console.log('Inserted', count, (count - prev) / 2, '/s');
       op.progress = total ? count / total : count;
       that.operationRepo.persistAndFlush(op);
+      prev = count;
     });
     that.storeSvc
       .dataTransaction(dataset, async helpers => {
-        await new GpkgReader()
-          .read({
-            async iterator(line, _total) {
-              total = _total;
+        await new GpkgReader().read({
+          async iterator(lines, _total) {
+            total = _total;
+            lines = lines.map(line => {
               let geom: any;
               let properties = {};
               Object.entries(line).forEach(([k, v]) => {
                 if (k === 'geom') geom = v;
                 else properties[k] = v;
               });
-              batch.push({ geom, properties });
-              if (batch.length % 10 === 0) {
-                await helpers.insertData({
-                  lines: batch,
-                });
-                batch = [];
-              }
-              count++;
-            },
-            absFilePath: i.media.getAbsFilePath(),
-          })
-          .then(async () => {
-            if (batch.length) {
-              await helpers.insertData({
-                lines: batch,
-              });
-            }
-          });
+              return { geom, properties };
+            });
+            await helpers.insertData({ lines });
+            count += lines.length;
+          },
+          absFilePath: i.media.getAbsFilePath(),
+        });
       })
       .then(async () => {
         const extent = await that.calculateExtent(dataset);

@@ -43,7 +43,7 @@ export class StoreService {
     const instance = this.getStoreInstance(found);
     await instance.removeTable(this.em);
     delete this.storeInstances[found.code];
-    await this.storeRepo.remove(found);
+    await this.storeRepo.removeAndFlush(found);
   }
 
   async query({
@@ -109,6 +109,8 @@ export class StoreService {
   async dataTransaction(dataset: Dataset, fn: (helpers: Helpers) => Promise<void>) {
     await this.em.transactional(async _em => {
       const instance = this.getStoreInstance(await dataset.store.load());
+      const knex = instance.getKnex(_em);
+      // await knex.raw('SET commit_delay TO 400;');
       try {
         await instance.tableExists(_em);
         await instance.dropIndices();
@@ -127,8 +129,10 @@ export class StoreService {
         const helpers = { insertData };
         await fn(helpers);
         await instance.restoreIndices();
+        // await knex.raw('SET synchronous_commit TO on;');
       } catch (err) {
         await instance.restoreIndices();
+        // await knex.raw('SET synchronous_commit TO on;');
         throw err;
       }
     });
