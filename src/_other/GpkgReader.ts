@@ -1,20 +1,68 @@
 import sqlite from 'better-sqlite3';
-import fs from 'fs';
-import util from 'util';
-
-/*
-b5 fd
-1011 0101 1111 1101
-
-*/
 
 export class GpkgReader {
-  getBit(nr: number, byte: number) {
+  constructor(public absFilePath: string) {}
+  private conn = new sqlite(this.absFilePath);
+
+  selectSource() {
+    const selectedSource: { table_name } = this.conn.prepare('SELECT * FROM gpkg_contents;').get();
+    return selectedSource;
+  }
+
+  getSize() {
+    const selectedSource = this.selectSource();
+    const sizeQuery = this.conn.prepare(
+      `SELECT COUNT(*) AS nlines FROM ${selectedSource.table_name}`,
+    );
+    const resp = sizeQuery.get();
+    const count = resp.nlines;
+    return count;
+  }
+
+  async read({
+    iterator,
+    start,
+    end,
+  }: {
+    iterator: (i: any[], count: number) => Promise<void>;
+    start: number;
+    end: number;
+  }) {
+    // fixme: binding did not work on table name
+    // const queue = new Queue(10);
+
+    const selectedSource = this.selectSource();
+    const count = end - start;
+    const cursor = this.conn.prepare(
+      `SELECT * FROM ${selectedSource.table_name} LIMIT ${end - start} OFFSET ${start}`,
+    );
+    let batch = [] as any[];
+    for (const chunk of cursor.iterate()) {
+      const geomUint = chunk.geom;
+      const geomBuffer = Buffer.from(geomUint);
+      const stripped = this.stripHeader(geomBuffer);
+      chunk.geom = stripped; //wkx.Geometry.parse(stripped);
+      batch.push(chunk);
+      if (batch.length >= 500) {
+        await iterator(batch, count);
+        batch = [];
+      }
+    }
+    if (batch.length) {
+      await iterator(batch, count);
+    }
+  }
+
+  finished() {
+    this.conn.close();
+  }
+
+  private getBit(nr: number, byte: number) {
     let bt = (nr >> byte) & 1;
     return bt;
   }
 
-  getInt(src: number[]) {
+  private getInt(src: number[]) {
     let out = 0;
     for (let x = 0; x < src.length; x++) {
       const bit = src[x];
@@ -23,7 +71,7 @@ export class GpkgReader {
     return out;
   }
 
-  stripHeader(src: Buffer) {
+  private stripHeader(src: Buffer) {
     // magic: 0 - 1
     // version: 2
     // flags: 3
@@ -42,50 +90,6 @@ export class GpkgReader {
     };
     const envsize = sizemap[contents];
     return src.slice(8 + envsize);
-  }
-
-  async read({
-    // sourceName,
-    iterator,
-    absFilePath,
-  }: {
-    sourceName?: string;
-    iterator: (i: any[], count: number) => Promise<void>;
-    absFilePath: string;
-  }) {
-    const conn = new sqlite(absFilePath);
-    const selectedSource = conn.prepare('SELECT * FROM gpkg_contents;').get();
-
-    const stat = await util.promisify(fs.stat)(absFilePath);
-    let count = null as any;
-    if (stat.size < 10 ** 9 /* 1 gb */) {
-      const sizeQuery = conn.prepare('SELECT COUNT(*) AS nlines FROM ?');
-      const resp = sizeQuery.get(selectedSource.table_name);
-      count = resp.nlines;
-    }
-
-    // fixme: binding did not work on table name
-    // const queue = new Queue(10);
-
-    const cursor = conn.prepare(`SELECT * FROM ${selectedSource.table_name}`);
-    let batch = [] as any[];
-    for (const chunk of cursor.iterate()) {
-      const geomUint = chunk.geom;
-      const geomBuffer = Buffer.from(geomUint);
-      const stripped = this.stripHeader(geomBuffer);
-      chunk.geom = stripped; //wkx.Geometry.parse(stripped);
-      batch.push(chunk);
-      if (batch.length >= 500) {
-        await iterator(batch, count);
-        batch = [];
-      }
-    }
-    if (batch.length) {
-      await iterator(batch, count);
-    }
-    // await queue.finished();
-
-    conn.close();
   }
 }
 

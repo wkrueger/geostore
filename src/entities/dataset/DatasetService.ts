@@ -2,22 +2,20 @@ import { Injectable } from '@nestjs/common';
 import { EntityManager, EntityRepository, wrap } from 'mikro-orm';
 import { InjectRepository } from 'nestjs-mikro-orm';
 import { error } from '../../_other/error';
-import { GpkgReader } from '../../_other/GpkgReader';
-import { TimerTicker } from '../../_other/TimerTicker';
 import { StoreService } from '../store/StoreService';
 import { Dataset } from '../_orm/DatasetEntity';
 import { Media } from '../_orm/MediaEntity';
 import { Operation, OperationState } from '../_orm/OperationEntity';
 import { Store } from '../_orm/StoreEntity';
+import { ThreadsEventServer } from '../../_other/workers/threads/ThreadsEventServer';
 
 @Injectable()
 export class DatasetService {
   constructor(
     private storeSvc: StoreService,
-    @InjectRepository(Operation)
-    private operationRepo: EntityRepository<Operation>,
     @InjectRepository(Dataset) private datasetRepo: EntityRepository<Dataset>,
     private em: EntityManager,
+    private eventServer: ThreadsEventServer,
   ) {}
 
   /**
@@ -28,79 +26,26 @@ export class DatasetService {
    */
   async create(i: { store: Store; media: Media; notes: string }) {
     const dataset = new Dataset();
-    const op = new Operation();
     wrap(dataset).assign(
       {
         state: OperationState.PENDING,
-        operation: op,
         store: i.store,
         media: i.media,
         notes: i.notes || '',
       },
       { em: this.em, mergeObjects: true },
     );
+    dataset.operation = new Operation() as any;
     await this.datasetRepo.persistAndFlush(dataset);
 
-    const that = this;
-    let count = 0;
-    let prev = 0;
-    let total = null as any;
-    const timerTicker = new TimerTicker(2000);
-    timerTicker.onTick(() => {
-      console.log('Inserted', count, (count - prev) / 2, '/s');
-      op.progress = total ? count / total : count;
-      that.operationRepo.persistAndFlush(op);
-      prev = count;
-    });
-    that.storeSvc
-      .dataTransaction(dataset, async helpers => {
-        await new GpkgReader().read({
-          async iterator(lines, _total) {
-            total = _total;
-            lines = lines.map(line => {
-              let geom: any;
-              let properties = {};
-              Object.entries(line).forEach(([k, v]) => {
-                if (k === 'geom') geom = v;
-                else properties[k] = v;
-              });
-              return { geom, properties };
-            });
-            await helpers.insertData({ lines });
-            count += lines.length;
-          },
-          absFilePath: i.media.getAbsFilePath(),
-        });
-      })
-      .then(async () => {
-        const extent = await that.calculateExtent(dataset);
-        const d1 = await that.datasetRepo.findOne({ id: dataset.id });
-        timerTicker.finished();
-        if (!d1) return;
-        d1.extent = extent.join(' ');
-        const op1 = await that.operationRepo.findOne({ id: op.id });
-        if (!op1) return;
-        op1.state = OperationState.COMPLETED;
-        op1.progress = 1;
-        await that.operationRepo.persistAndFlush(op1);
-        await that.datasetRepo.persistAndFlush(d1);
-      })
-      .catch(async err => {
-        console.log('Operation errored', err);
-        const op1 = await that.operationRepo.findOne({ id: op.id });
-        timerTicker.finished();
-        if (!op1) return;
-        op1.state = OperationState.ERRORED;
-        op1.message = String(err).substr(0, 254);
-        that.operationRepo.persistAndFlush(op1);
-      });
-    await this.datasetRepo.populate(dataset, ['operation']);
+    this.eventServer.invoke('getSize', { datasetId: dataset.id });
+
     return dataset;
   }
 
   async remove(id: number) {
     await this.em.transactional(async _em => {
-      const found = await this.datasetRepo.findOne({ id }, ['store']);
+      const found = await this.datasetRepo.findOne({ id });
       if (!found) throw error('NOT_FOUND', 'Dataset not found.');
       const store = await found.store.load();
       const inst = this.storeSvc.getStoreInstance(store);

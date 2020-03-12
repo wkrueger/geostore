@@ -25,4 +25,7 @@ export class Operation {
 
   @Property({ onUpdate: () => new Date() })
   updatedAt!: Date;
+
+  @Property({ type: 'jsonb' })
+  info?: Record<string, any>;
 }
