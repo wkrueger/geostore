@@ -18,7 +18,7 @@ export const ormConfig /*: Options */ = {
   dbName: ctx.db.database,
   entitiesDirsTs: ['src/entities/_orm'],
   entities: [Dataset, Media, Operation, Store, Mapfile, MapfileLayer],
-  debug: true,
+  // debug: true,
 };
 
 export default ormConfig;

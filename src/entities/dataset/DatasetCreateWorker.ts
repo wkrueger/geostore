@@ -1,19 +1,21 @@
-import { Dataset } from '../_orm/DatasetEntity';
 import { Logger } from '@nestjs/common';
-import { DatasetService } from './DatasetService';
-import { InjectRepository } from 'nestjs-mikro-orm';
 import { EntityRepository } from 'mikro-orm';
+import { InjectRepository } from 'nestjs-mikro-orm';
 import { error } from '../../_other/error';
 import { GpkgReader } from '../../_other/GpkgReader';
+import { EventWorker } from '../../_other/workers/EventWorker';
 import { StoreService } from '../store/StoreService';
-import { OperationState } from '../_orm/OperationEntity';
-import { ThreadsEventWorker } from '../../_other/workers/threads/ThreadsEventWorker';
+import { Dataset } from '../_orm/DatasetEntity';
+import { OperationState, Operation } from '../_orm/OperationEntity';
+import { DatasetService } from './DatasetService';
 
 export class DatasetCreateWorker {
   constructor(
     @InjectRepository(Dataset) private datasetRepo: EntityRepository<Dataset>,
+    @InjectRepository(Operation) private operationRepo: EntityRepository<Operation>,
     private storeSvc: StoreService,
     private datasetSvc: DatasetService,
+    private eventWorker: EventWorker<any>,
   ) {
     this.eventWorker.setHandler('getSize', this.getSize.bind(this));
     this.eventWorker.setHandler('loadChunk', this.loadChunk.bind(this));
@@ -21,7 +23,6 @@ export class DatasetCreateWorker {
     this.eventWorker.setErrorHandler(this.onFail.bind(this));
     this.eventWorker.start();
   }
-  eventWorker = new ThreadsEventWorker();
 
   private logger = new Logger('maploader');
 
@@ -50,14 +51,12 @@ export class DatasetCreateWorker {
     if (!dataset) return;
     const operation = await dataset.operation.load();
     let bounds: [number, number][];
-    if (datasetSize < 10 ** 5) {
-      bounds = [[0, datasetSize + 100]];
-    } else {
-      const chunkSize = Math.ceil(datasetSize / 4);
-      bounds = [0, 1, 2, 3].map(idx => {
-        return [idx * chunkSize, (idx + 1) * chunkSize];
-      });
-    }
+
+    const chunkSize = 100000;
+    const nchunks = Math.ceil(datasetSize / chunkSize);
+    bounds = new Array(nchunks).fill(1).map((_, idx) => {
+      return [idx * chunkSize, (idx + 1) * chunkSize];
+    });
 
     const jobs = await Promise.all(
       bounds.map(args => {
@@ -68,11 +67,11 @@ export class DatasetCreateWorker {
         });
       }),
     );
+    this.eventWorker.schedule({ key: 'postLoad', data: { datasetId: dataset.id } }, jobs);
     operation.info = {
       processed: 0,
       total: datasetSize,
       allJobs: jobs,
-      finishedJobs: [],
     };
     await this.datasetRepo.persistAndFlush(operation);
   }
@@ -121,12 +120,11 @@ export class DatasetCreateWorker {
   async onChunkComplete(jobId, datasetId) {
     const dataset = await this.datasetRepo.findOne({ id: datasetId });
     if (!dataset) return;
-    const operation = await dataset.operation.load();
-    operation.info!.finishedJobs = [...operation.info!.finishedJobs, jobId];
+    const operation = (await this.operationRepo.findOne(
+      { id: dataset.operation.id },
+      { refresh: true },
+    ))!;
     await this.datasetRepo.persistAndFlush(operation);
-    if (operation.info!.allJobs.length === operation.info!.finishedJobs.length) {
-      await this.eventWorker.invokeHandler('postLoad', { datasetId: dataset.id });
-    }
   }
 
   async postLoad(data: { datasetId: number }) {

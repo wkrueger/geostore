@@ -2,12 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { EntityManager, EntityRepository, wrap } from 'mikro-orm';
 import { InjectRepository } from 'nestjs-mikro-orm';
 import { error } from '../../_other/error';
+import { EventServer } from '../../_other/workers/EventServer';
 import { StoreService } from '../store/StoreService';
 import { Dataset } from '../_orm/DatasetEntity';
 import { Media } from '../_orm/MediaEntity';
 import { Operation, OperationState } from '../_orm/OperationEntity';
 import { Store } from '../_orm/StoreEntity';
-import { ThreadsEventServer } from '../../_other/workers/threads/ThreadsEventServer';
 
 @Injectable()
 export class DatasetService {
@@ -15,7 +15,7 @@ export class DatasetService {
     private storeSvc: StoreService,
     @InjectRepository(Dataset) private datasetRepo: EntityRepository<Dataset>,
     private em: EntityManager,
-    private eventServer: ThreadsEventServer,
+    private eventServer: EventServer<any>,
   ) {}
 
   /**

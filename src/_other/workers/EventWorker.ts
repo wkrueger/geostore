@@ -1,5 +1,5 @@
 import { v4 } from 'uuid';
-import { Logger } from '@nestjs/common';
+import { Logger, Injectable } from '@nestjs/common';
 
 export interface Handler {
   (data: any, key: string, jobId): Promise<void>;
@@ -8,6 +8,7 @@ export interface ErrorHandler {
   (i: { data; error; key }): Promise<void>;
 }
 
+@Injectable()
 export abstract class EventWorker<T> {
   handlers: Record<string, Handler> = {};
   errorHandler: ErrorHandler = async i => console.error(i);
@@ -28,16 +29,21 @@ export abstract class EventWorker<T> {
     return new Promise<number>(resolve => {
       let listener = this.listenToParent(msg => {
         if (msg.key === '_invokeSuccess' && msg.data?.invokeId === invokeId) {
-          resolve(msg.id);
+          resolve(msg.data.id);
           listener?.close();
         }
       });
     });
   }
 
+  schedule(job: { key; data }, reqs: number[]) {
+    this.postToParent({ key: '_schedule', data: { job, reqs } });
+  }
+
   start() {
     this.listenToParent(async (msg: { key; data; id }) => {
       try {
+        if (msg.key.charAt(0) === '_') return;
         const runner = this.handlers[msg.key];
         if (!runner) {
           throw Error('No handler found for ' + msg.key);
@@ -47,7 +53,7 @@ export abstract class EventWorker<T> {
         this.logger.log(`Worker ${this.getMyId()} - Finished ${msg.key}/${msg.id}.`);
         this.postToParent({ key: '_jobSuccess', data: { id: msg.id, key: msg.key } });
       } catch (err) {
-        this.logger.error(`Worker ${this.getMyId()} - Failed ${msg.key}/${msg.id}.`);
+        this.logger.error(`Worker ${this.getMyId()} - Failed ${msg.key}/${msg.id}. ${String(err)}`);
         this.postToParent({
           key: '_jobError',
           data: { id: msg.id, key: msg.key, error: String(err) },

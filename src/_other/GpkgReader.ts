@@ -93,60 +93,60 @@ export class GpkgReader {
   }
 }
 
-class Queue {
-  constructor(public concurrent: number) {}
-  listener?: (err?) => void;
-  finishListener?: (err?) => void;
-  running = 0;
+// class Queue {
+//   constructor(public concurrent: number) {}
+//   listener?: (err?) => void;
+//   finishListener?: (err?) => void;
+//   running = 0;
 
-  register(fn: () => Promise<void>) {
-    this.running++;
-    fn()
-      .then(() => {
-        this.running--;
-        if (this.running < this.concurrent) {
-          this.listener && this.listener();
-          if (this.running === 0) {
-            this.finishListener && this.finishListener();
-          }
-        }
-      })
-      .catch(err => {
-        this.listener && this.listener(err);
-        this.finishListener && this.finishListener(err);
-      });
-  }
+//   register(fn: () => Promise<void>) {
+//     this.running++;
+//     fn()
+//       .then(() => {
+//         this.running--;
+//         if (this.running < this.concurrent) {
+//           this.listener && this.listener();
+//           if (this.running === 0) {
+//             this.finishListener && this.finishListener();
+//           }
+//         }
+//       })
+//       .catch(err => {
+//         this.listener && this.listener(err);
+//         this.finishListener && this.finishListener(err);
+//       });
+//   }
 
-  async add(fn: () => Promise<any>) {
-    if (this.running >= this.concurrent) {
-      await new Promise((resolve, reject) => {
-        if (this.listener) {
-          console.error('unexpected');
-          throw Error('unexpected');
-        }
-        this.listener = err => {
-          if (err) return reject(err);
-          this.listener = undefined;
-          resolve();
-        };
-      });
-      this.register(fn);
-    } else {
-      this.register(fn);
-    }
-  }
+//   async add(fn: () => Promise<any>) {
+//     if (this.running >= this.concurrent) {
+//       await new Promise((resolve, reject) => {
+//         if (this.listener) {
+//           console.error('unexpected');
+//           throw Error('unexpected');
+//         }
+//         this.listener = err => {
+//           if (err) return reject(err);
+//           this.listener = undefined;
+//           resolve();
+//         };
+//       });
+//       this.register(fn);
+//     } else {
+//       this.register(fn);
+//     }
+//   }
 
-  async finished() {
-    if (this.running === 0) return;
-    if (this.finishListener) {
-      console.error('unexpected (finish)');
-      throw Error('unexpected (finish)');
-    }
-    await new Promise((resolve, reject) => {
-      this.finishListener = err => {
-        if (err) return reject(err);
-        resolve();
-      };
-    });
-  }
-}
+//   async finished() {
+//     if (this.running === 0) return;
+//     if (this.finishListener) {
+//       console.error('unexpected (finish)');
+//       throw Error('unexpected (finish)');
+//     }
+//     await new Promise((resolve, reject) => {
+//       this.finishListener = err => {
+//         if (err) return reject(err);
+//         resolve();
+//       };
+//     });
+//   }
+// }

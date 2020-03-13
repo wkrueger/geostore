@@ -1,9 +1,7 @@
 import { Logger, MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
-
 import { MikroORM } from 'mikro-orm';
 import { MikroOrmModule } from 'nestjs-mikro-orm';
-import { Worker } from 'worker_threads';
 import { getContext } from './contexts/getContext';
 import { DatasetController } from './entities/dataset/DatasetController';
 import { DatasetService } from './entities/dataset/DatasetService';
@@ -14,8 +12,11 @@ import { StoreController } from './entities/store/StoreController';
 import { StoreService } from './entities/store/StoreService';
 import { MigrationsController } from './migrations';
 import { ormConfig } from './mikro-orm.config';
-import { ThreadsEventServer } from './_other/workers/threads/ThreadsEventServer';
 import { MainExceptionFilter } from './_other/MainExceptionFilter';
+import { EventServer } from './_other/workers/EventServer';
+import { EventWorker } from './_other/workers/EventWorker';
+import { ForkEventServer } from './_other/workers/forks/ForkEventServer';
+import { ForkEventWorker } from './_other/workers/forks/ForkEventWorker';
 
 const ctx = getContext();
 
@@ -30,16 +31,13 @@ const ctx = getContext();
     DatasetService,
     StoreService,
     MapfileService,
-    ThreadsEventServer,
+    { provide: EventServer, useClass: ForkEventServer },
+    { provide: EventWorker, useClass: ForkEventWorker },
     { provide: APP_FILTER, useClass: MainExceptionFilter },
   ],
 })
 export class AppModule implements NestModule {
-  constructor(
-    private mediaService: MediaService,
-    orm: MikroORM,
-    public workers: ThreadsEventServer,
-  ) {
+  constructor(private mediaService: MediaService, orm: MikroORM, public workers: EventServer<any>) {
     orm
       .getMigrator()
       .getPendingMigrations()
