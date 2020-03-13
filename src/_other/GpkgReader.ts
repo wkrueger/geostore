@@ -36,20 +36,19 @@ export class GpkgReader {
     const cursor = this.conn.prepare(
       `SELECT * FROM ${selectedSource.table_name} LIMIT ${end - start} OFFSET ${start}`,
     );
-    let batch = [] as any[];
-    for (const chunk of cursor.iterate()) {
+    const all = cursor.all();
+    for (const chunk of all) {
       const geomUint = chunk.geom;
       const geomBuffer = Buffer.from(geomUint);
       const stripped = this.stripHeader(geomBuffer);
       chunk.geom = stripped; //wkx.Geometry.parse(stripped);
-      batch.push(chunk);
-      if (batch.length >= 500) {
-        await iterator(batch, count);
-        batch = [];
-      }
     }
-    if (batch.length) {
-      await iterator(batch, count);
+    let slice = null as any;
+    let sliceStart = 0;
+    while (slice && slice.length) {
+      slice = all.slice(sliceStart, sliceStart + 200);
+      await iterator(slice, count);
+      sliceStart += 200;
     }
   }
 

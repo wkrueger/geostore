@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { EntityRepository } from 'mikro-orm';
+import { EntityRepository, EntityManager } from 'mikro-orm';
 import { InjectRepository } from 'nestjs-mikro-orm';
 import { error } from '../../_other/error';
 import { GpkgReader } from '../../_other/GpkgReader';
@@ -16,10 +16,12 @@ export class DatasetCreateWorker {
     private storeSvc: StoreService,
     private datasetSvc: DatasetService,
     private eventWorker: EventWorker<any>,
+    private em: EntityManager,
   ) {
     this.eventWorker.setHandler('getSize', this.getSize.bind(this));
     this.eventWorker.setHandler('loadChunk', this.loadChunk.bind(this));
     this.eventWorker.setHandler('postLoad', this.postLoad.bind(this));
+    this.eventWorker.setHandler('remove', this.remove.bind(this));
     this.eventWorker.setErrorHandler(this.onFail.bind(this));
     this.eventWorker.start();
   }
@@ -137,5 +139,17 @@ export class DatasetCreateWorker {
     operation.progress = 1;
     operation.state = OperationState.COMPLETED;
     await this.datasetRepo.persistAndFlush(found);
+  }
+
+  async remove(data: { datasetId: number }) {
+    const found = await this.datasetRepo.findOne({ id: data.datasetId });
+    if (!found) throw error('NOT_FOUND', 'Dataset not found.');
+    const store = await found.store.load();
+    const inst = this.storeSvc.getStoreInstance(store);
+    await inst
+      .getQueryBuilder(this.em)
+      .where({ datasetId: data.datasetId })
+      .delete();
+    await this.datasetRepo.removeAndFlush(found);
   }
 }

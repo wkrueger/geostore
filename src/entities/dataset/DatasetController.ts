@@ -82,8 +82,8 @@ export class DatasetController {
   async remove(@Param('id') id: number) {
     id = Number(id);
     if (!id) throw error('BAD_REQUEST', 'Missing id parameter.');
-    await this.datasetService.remove(id);
-    return {};
+    const jobId: number = await this.datasetService.remove(id);
+    return { status: 'scheduled removal', jobId };
   }
 }
 

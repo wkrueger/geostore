@@ -44,14 +44,7 @@ export class DatasetService {
   }
 
   async remove(id: number) {
-    await this.em.transactional(async _em => {
-      const found = await this.datasetRepo.findOne({ id });
-      if (!found) throw error('NOT_FOUND', 'Dataset not found.');
-      const store = await found.store.load();
-      const inst = this.storeSvc.getStoreInstance(store);
-      await inst.getQueryBuilder(_em).where({ datasetId: id });
-      await this.datasetRepo.removeAndFlush(found);
-    });
+    return this.eventServer.invoke('remove', { datasetId: id });
   }
 
   async calculateExtent(dataset: Dataset): Promise<number[]> {

@@ -15,10 +15,10 @@ export class ForkEventWorker extends EventWorker<cp.ChildProcess> {
   }
 
   listenToParent(fn) {
-    const listener = process.addListener('message', fn);
+    process.addListener('message', fn);
     return {
       close() {
-        listener.off('message', fn);
+        process.removeListener('message', fn);
       },
     };
   }

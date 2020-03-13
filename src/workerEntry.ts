@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { MikroOrmModule } from 'nestjs-mikro-orm';
 import { parentPort } from 'worker_threads';
-import { DatasetCreateWorker } from './entities/dataset/DatasetCreateWorker';
+import { DatasetCreateWorker } from './entities/dataset/DatasetWorker';
 import { DatasetService } from './entities/dataset/DatasetService';
 import { MapfileService } from './entities/mapfile/MapfileService';
 import { MediaService } from './entities/media/MediaService';
