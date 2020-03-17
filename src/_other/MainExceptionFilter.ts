@@ -11,7 +11,8 @@ export class MainExceptionFilter implements ExceptionFilter {
   }
 
   errorFormat(exception: any) {
-    const msg = exception?.message || String(exception);
+    let msg = exception?.message || String(exception);
+    if (typeof msg !== 'string') msg = msg.message;
     const code = exception?.code || 'ERROR';
     console.error(exception);
     return {

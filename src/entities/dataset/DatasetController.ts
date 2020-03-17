@@ -9,6 +9,7 @@ import { Store } from '../_orm/StoreEntity';
 import { DatasetService } from './DatasetService';
 import { MediaService } from '../media/MediaService';
 import { CreateFromMediaDto } from './DatasetDto';
+import { filterWhereObject } from '../../_other/filterWhereObject';
 
 @ApiTags('datasets')
 @Controller('datasets')
@@ -70,7 +71,7 @@ export class DatasetController {
     }
 
     return this.datasetRepo.find(
-      filterObj({
+      filterWhereObject({
         id: id || undefined,
         store: store ? { code: store } : undefined,
       }),
@@ -85,14 +86,4 @@ export class DatasetController {
     const jobId: number = await this.datasetService.remove(id);
     return { status: 'scheduled removal', jobId };
   }
-}
-
-function filterObj<T>(obj: T): T {
-  const out = {} as any;
-  Object.entries(obj).forEach(([k, v]) => {
-    if (v !== undefined) {
-      out[k] = v;
-    }
-  });
-  return out;
 }

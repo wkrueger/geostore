@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { EntityManager, EntityRepository } from 'mikro-orm';
+import { InjectRepository } from 'nestjs-mikro-orm';
 import { error } from '../../_other/error';
 import { Dataset } from '../_orm/DatasetEntity';
-import { StoreInstance } from './Instance';
 import { Store } from '../_orm/StoreEntity';
-import { InjectRepository } from 'nestjs-mikro-orm';
-import { EntityRepository, EntityManager, MikroORM } from 'mikro-orm';
-import wkx from 'wkx';
-import { StoreQueryDto, CreateStoreDto } from './StoreDto';
+import { StoreInstance } from './Instance';
+import { CreateStoreDto, StoreQueryDto } from './StoreDto';
 
 @Injectable()
 export class StoreService {
@@ -24,17 +23,16 @@ export class StoreService {
     return this.storeInstances[store.code];
   }
 
-  async create(i: CreateStoreDto) {
-    const store = await this.em.transactional(async _em => {
-      const store = new Store();
-      store.code = i.code;
-      store.label = i.label;
+  async upsert(dto: CreateStoreDto, store = new Store()) {
+    const out = await this.em.transactional(async _em => {
+      store.code = dto.code;
+      store.label = dto.label;
       await this.storeRepo.persistAndFlush(store);
       const instance = this.getStoreInstance(store);
       await instance.tableExists(_em);
       return store;
     });
-    return store;
+    return out;
   }
 
   async remove(i: { id: number }) {
