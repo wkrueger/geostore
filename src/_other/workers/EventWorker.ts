@@ -54,6 +54,7 @@ export abstract class EventWorker<T> {
         this.postToParent({ key: '_jobSuccess', data: { id: msg.id, key: msg.key } });
       } catch (err) {
         this.logger.error(`Worker ${this.getMyId()} - Failed ${msg.key}/${msg.id}. ${String(err)}`);
+        console.error(err);
         this.postToParent({
           key: '_jobError',
           data: { id: msg.id, key: msg.key, error: String(err) },

@@ -56,6 +56,10 @@ export class DatasetService {
       .where({ datasetId: dataset.id })
       .select(knex.raw('ST_Extent(geometry) AS bextent'));
     if (!resp) return Dataset.DEFAULT_EXTENT;
+    if (!resp.bextent) {
+      console.warn('warn: extent response null');
+      return Dataset.DEFAULT_EXTENT;
+    }
     const split = resp.bextent
       .replace(/BOX\((.*)\)/g, '$1')
       .replace(/,/g, ' ')

@@ -24,7 +24,7 @@ export class DatasetController {
   @ApiOperation({
     description: trimDocs(`
       Requires a multipart body with fields:
-        - storeCode: the string code of the target store
+        - storeCode or storeId
         - file: a geoPackage. First dataset will be taken. Must have name metadata.
 
       Currently requires and assumes EPSG:4326 projection.
@@ -33,8 +33,11 @@ export class DatasetController {
   @Post()
   async create(@Req() request: any) {
     const storeCode: string = request.body.storeCode;
-    if (!storeCode) throw error('BAD_REQUEST', 'storeCode parameter missing.');
-    const store = await this.storeRepo.findOne({ code: storeCode });
+    const storeId: number = Number(request.body.storeId);
+    if (!storeCode && !storeId) throw error('BAD_REQUEST', 'store parameter missing.');
+    const store = await this.storeRepo.findOne(
+      filterWhereObject({ code: storeCode, id: storeId || undefined }),
+    );
     if (!store) throw error('STORE_NOT_FOUND', 'Store with this code not found.');
     if (!request.media) {
       throw error('UPLOAD_FAILED', 'Upload failed.');

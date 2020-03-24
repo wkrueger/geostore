@@ -18,7 +18,9 @@ TODO:
   
 Issues:
   - Dataset -> store delete cascade
+  - Validate store code
 
-Fixme next:
+Fixme other:
   - Swagger - optional query params
   - Swagger - identified references
+
