@@ -26,7 +26,7 @@ export class StoreController {
   @ApiQuery({ name: 'id', required: false })
   @Get()
   async list(@Query('id') id?: number) {
-    return this.storeRepo.find(filterWhereObject({ id }), { populate: ['datasets'] });
+    return this.storeRepo.find(filterWhereObject({ id }));
   }
 
   @ApiBody({ type: CreateStoreDto })

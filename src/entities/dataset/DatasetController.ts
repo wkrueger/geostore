@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Query, Req, Delete, Param, Body } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { EntityRepository } from 'mikro-orm';
 import { InjectRepository } from 'nestjs-mikro-orm';
 import { error } from '../../_other/error';
@@ -64,16 +64,20 @@ export class DatasetController {
   }
 
   @Get()
-  async list(@Query('id') id?: number, @Query('store') store?: string) {
-    if (store) {
-      if (isNaN(parseInt(store)))
-        throw error('INVALID_QUERY', 'Invalid argument format for query parameter "store".');
-    }
+  @ApiQuery({ name: 'id', required: false })
+  @ApiQuery({ name: 'storeCode', required: false })
+  @ApiQuery({ name: 'storeId', required: false })
+  async list(
+    @Query('id') id?: number,
+    @Query('storeCode') storeCode?: string,
+    @Query('storeId') storeId?: number,
+  ) {
+    if (storeId) storeId = Number(storeId);
 
     return this.datasetRepo.find(
       filterWhereObject({
         id: id || undefined,
-        store: store ? { code: store } : undefined,
+        store: filterWhereObject({ code: storeCode, id: storeId }, true),
       }),
       { populate: ['operation'] },
     );
