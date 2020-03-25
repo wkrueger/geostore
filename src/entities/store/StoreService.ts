@@ -6,6 +6,7 @@ import { Dataset } from '../_orm/DatasetEntity';
 import { Store } from '../_orm/StoreEntity';
 import { StoreInstance } from './Instance';
 import { CreateStoreDto, StoreQueryDto } from './StoreDto';
+import { OperationState } from '../_orm/OperationEntity';
 
 @Injectable()
 export class StoreService {
@@ -21,6 +22,16 @@ export class StoreService {
     if (this.storeInstances[store.code]) return this.storeInstances[store.code];
     this.storeInstances[store.code] = new StoreInstance(store);
     return this.storeInstances[store.code];
+  }
+
+  async getLatestDataset(store: Store) {
+    const [dataset] = await this.datasetRepo.find(
+      { store, operation: { state: OperationState.COMPLETED } },
+      undefined,
+      { createdAt: 'desc' },
+      1,
+    );
+    return dataset as Dataset | undefined;
   }
 
   async upsert(dto: CreateStoreDto, store = new Store()) {

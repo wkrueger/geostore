@@ -9,6 +9,7 @@ import {
 } from 'mikro-orm';
 import { Dataset } from './DatasetEntity';
 import { Mapfile } from './MapfileEntity';
+import { Store } from './StoreEntity';
 
 @Entity()
 export class MapfileLayer {
@@ -24,8 +25,13 @@ export class MapfileLayer {
   @Property()
   label!: string;
 
+  // either store or dataset
   @OneToOne({ owner: true })
-  dataset!: IdentifiedReference<Dataset>;
+  dataset?: IdentifiedReference<Dataset>;
+
+  // either store or dataset
+  @OneToOne({ owner: true })
+  store?: IdentifiedReference<Store>;
 
   @Property({ type: 'text', default: "''" })
   classes!: string;

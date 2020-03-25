@@ -12,6 +12,7 @@ import { CreateMapfileDto } from './MapfileDto';
 import { ApiTags } from '@nestjs/swagger';
 import fs from 'fs';
 import { promisify } from 'util';
+import { StoreService } from '../store/StoreService';
 
 @ApiTags('mapfiles')
 @Injectable()
@@ -19,9 +20,18 @@ export class MapfileService {
   constructor(
     @InjectRepository(Mapfile) private mapfileRepo: EntityRepository<Mapfile>,
     private em: EntityManager,
+    private storeSvc: StoreService,
   ) {}
 
   compiledTemplate = handlebars.compile(defaultTemplate);
+
+  async getLayerDataset(layer: MapfileLayer) {
+    const ds = await layer.dataset?.load();
+    if (ds) return ds;
+    if (!layer.store) throw error('INVALID_LAYER', 'Layer requires either a store or dataset.');
+    const ds2 = this.storeSvc.getLatestDataset(await layer.store.load());
+    return ds2;
+  }
 
   async create(inp: CreateMapfileDto, toCreate = this.mapfileRepo.create({})) {
     const layers: MapfileLayer[] = await Promise.all(
@@ -55,10 +65,15 @@ export class MapfileService {
   async render(mapfile: Mapfile) {
     await mapfile.layers.init(['dataset', 'dataset.store']);
     if (!mapfile.layers.length) throw error('NO_LAYERS', 'No layers on mapfile.');
-    const extents = mapfile.layers
-      .getItems()
-      .map(layer => layer.dataset.getProperty('extent'))
-      .filter(Boolean);
+    let pairs = await Promise.all(
+      mapfile.layers.getItems().map(async layer => {
+        const dataset: Dataset = (await this.getLayerDataset(layer)) as any;
+        return { layer, dataset };
+      }),
+    );
+    pairs = pairs.filter(x => Boolean(x.dataset));
+    if (!pairs) throw error('NO_VALID_DATASET', 'No valid dataset.');
+    const extents = pairs.map(pair => pair.dataset.extent).filter(Boolean);
     const extent = this._mergeExtents(
       extents.map(x =>
         String(x)
@@ -67,24 +82,26 @@ export class MapfileService {
       ),
     ).join(' ');
     const projectionCode =
-      mapfile.layers[0].dataset.getProperty('store').getProperty('projectionCode') ||
-      Store.DEFAULT_PROJECTION_CODE;
+      pairs[0].dataset.store.getProperty('projectionCode') || Store.DEFAULT_PROJECTION_CODE;
 
     const mapped: MapfileTemplate = {
       label: mapfile.label,
       extent: this._formatExtent(extent),
       projectionCode,
-      layers: mapfile.layers.getItems().map(layer => {
-        return {
-          code: layer.code,
-          extent: this._formatExtent(layer.dataset.getProperty('extent')),
-          connection: this._getConnection(),
-          query: this._getQuery(layer),
-          label: layer.label,
-          projection: layer.dataset.getProperty('store').getProperty('projectionCode'),
-          classes: layer.classes,
-        };
-      }),
+      layers: await Promise.all(
+        pairs.map(async pair => {
+          const layer = pair.layer;
+          return {
+            code: layer.code,
+            extent: this._formatExtent(pair.dataset.extent),
+            connection: this._getConnection(),
+            query: await this._getQuery(pair.dataset),
+            label: layer.label,
+            projection: pair.dataset.store.getProperty('projectionCode'),
+            classes: layer.classes,
+          };
+        }),
+      ),
     };
 
     const merged = this._getTemplate(mapfile)(mapped);
@@ -122,8 +139,8 @@ export class MapfileService {
     return out;
   }
 
-  _getQuery(layer: MapfileLayer) {
-    const store = layer.dataset.getProperty('store').unwrap();
+  async _getQuery(dataset: Dataset) {
+    const store = await dataset.store.load();
     return `geometry from instance_${store.code} USING srid=4326 USING unique id`;
   }
 

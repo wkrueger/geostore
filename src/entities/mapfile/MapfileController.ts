@@ -7,7 +7,7 @@ import { CreateMapfileDto } from './MapfileDto';
 import { MapfileService } from './MapfileService';
 import { Response } from 'express';
 import { filterWhereObject } from '../../_other/filterWhereObject';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('mapfiles')
 @Controller('mapfiles')
@@ -23,7 +23,8 @@ export class MapfileController {
   }
 
   @Get()
-  async list(@Query('id') id: number) {
+  @ApiQuery({ name: 'id', required: false })
+  async list(@Query('id') id?: number) {
     id = parseInt(id as any);
     return this.mapfileSvc.list(filterWhereObject({ id }));
   }
