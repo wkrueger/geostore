@@ -59,6 +59,7 @@ export class DatasetCreateWorker {
     bounds = new Array(nchunks).fill(1).map((_, idx) => {
       return [idx * chunkSize, (idx + 1) * chunkSize];
     });
+    console.log('dataset size', datasetSize);
 
     const jobs = await Promise.all(
       bounds.map(args => {
@@ -91,6 +92,7 @@ export class DatasetCreateWorker {
         start: data.start,
         end: data.end,
         async iterator(lines) {
+          console.log('iterator', lines.length);
           lines = lines.map(line => {
             let geom: any;
             let properties = {};

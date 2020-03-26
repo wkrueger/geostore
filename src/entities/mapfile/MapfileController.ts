@@ -51,5 +51,6 @@ export class MapfileController {
   async remove(@Param('id') id: number) {
     id = Number(id);
     await this.mapfileRepo.remove({ id });
+    return {};
   }
 }

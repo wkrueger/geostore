@@ -43,12 +43,12 @@ export class GpkgReader {
       const stripped = this.stripHeader(geomBuffer);
       chunk.geom = stripped; //wkx.Geometry.parse(stripped);
     }
-    let slice = null as any;
     let sliceStart = 0;
-    while (slice && slice.length) {
-      slice = all.slice(sliceStart, sliceStart + 200);
+    let slice = all.slice(sliceStart, sliceStart + 200);
+    while (slice.length) {
       await iterator(slice, count);
       sliceStart += 200;
+      slice = all.slice(sliceStart, sliceStart + 200);
     }
   }
 
