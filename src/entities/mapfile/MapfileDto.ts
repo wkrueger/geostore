@@ -20,8 +20,11 @@ export class CreateLayerDto {
   @Allow()
   code?: string;
 
-  @IsNotEmpty()
-  dataset!: number;
+  @Allow()
+  store?: number;
+
+  @Allow()
+  dataset?: number;
 
   @IsNotEmpty()
   classes!: string;

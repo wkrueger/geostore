@@ -12,13 +12,11 @@ Outputs:
 
 Must have:
   - swagger
-
-TODO:
-  - Error responses
   
 Issues:
   - Dataset -> store delete cascade
-  - Validate store code
+  - Validate "code" format
+  - Validation error responses bad
 
 Fixme other:
   - Swagger - optional query params
