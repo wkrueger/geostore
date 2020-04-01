@@ -17,6 +17,7 @@ import { EventServer } from './_other/workers/EventServer';
 import { EventWorker } from './_other/workers/EventWorker';
 import { ForkEventServer } from './_other/workers/forks/ForkEventServer';
 import { ForkEventWorker } from './_other/workers/forks/ForkEventWorker';
+import { MediaController } from './entities/media/MediaController';
 
 const ctx = getContext();
 
@@ -25,7 +26,13 @@ const ctx = getContext();
     MikroOrmModule.forRoot(ormConfig),
     MikroOrmModule.forFeature({ entities: ormConfig.entities }),
   ],
-  controllers: [StoreController, DatasetController, MapfileController, MigrationsController],
+  controllers: [
+    StoreController,
+    DatasetController,
+    MapfileController,
+    MigrationsController,
+    MediaController,
+  ],
   providers: [
     MediaService,
     DatasetService,

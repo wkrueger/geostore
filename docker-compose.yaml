@@ -1,4 +1,4 @@
-version: "3.7"
+version: '3.7'
 # apenas banco de dados
 services:
   geostore-postgres:
@@ -7,27 +7,25 @@ services:
     volumes:
       - geostore_pg:/var/lib/postgresql
     environment:
-      - "POSTGRES_DB=geostore"
-      - "POSTGRES_USER=willian"
-      - "POSTGRES_PASSWORD=123456"
-      - "ALLOW_IP_RANGE=0.0.0.0/0"
+      - 'POSTGRES_DB=geostore'
+      - 'POSTGRES_USER=willian'
+      - 'POSTGRES_PASSWORD=123456'
+      - 'ALLOW_IP_RANGE=0.0.0.0/0'
     ports:
-      - "5432:5432" #local only
+      - '5432:5432' #local only
     networks:
       - default
-
-  geostore-mapserver:
-    image: camptocamp/mapserver:7.4
-    container_name: geostore-mapserver
-    volumes:
-      - ./mapfiles/:/etc/mapserver/
-    environment:
-      - "BUSY_TIMEOUT=20"
-    ports:
-      - "8080:80"
-    networks:
-      - default
-
+  # geostore-mapserver:
+  #   image: camptocamp/mapserver:7.4
+  #   container_name: geostore-mapserver
+  #   volumes:
+  #     - ./mapfiles/:/etc/mapserver/
+  #   environment:
+  #     - 'BUSY_TIMEOUT=20'
+  #   ports:
+  #     - '8080:80'
+  #   networks:
+  #     - default
   # geostore-redis:
   #   image: bitnami/redis:latest
   #   environment:
@@ -42,7 +40,7 @@ services:
 
 volumes:
   geostore_pg:
-  geostore_redis:
+  # geostore_redis:
 
 networks:
   default:

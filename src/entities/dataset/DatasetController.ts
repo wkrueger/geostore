@@ -67,19 +67,14 @@ export class DatasetController {
   }
 
   @Get()
-  @ApiQuery({ name: 'id', required: false })
   @ApiQuery({ name: 'storeCode', required: false })
   @ApiQuery({ name: 'storeId', required: false })
-  async list(
-    @Query('id') id?: number,
-    @Query('storeCode') storeCode?: string,
-    @Query('storeId') storeId?: number,
-  ) {
+  async list(@Query('storeCode') storeCode?: string, @Query('storeId') storeId?: number) {
     if (storeId) storeId = Number(storeId);
 
     return this.datasetRepo.find(
       filterWhereObject({
-        id: id || undefined,
+        id: storeId || undefined,
         store: filterWhereObject({ code: storeCode, id: storeId }, true),
       }),
       { populate: ['operation'] },
