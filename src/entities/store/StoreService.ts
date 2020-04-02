@@ -120,7 +120,10 @@ export class StoreService {
         properties: result.properties,
       };
     });
-    return results;
+    return {
+      type: 'FeatureCollection',
+      features: results,
+    };
   }
 
   async dataTransaction(dataset: Dataset, fn: (helpers: Helpers) => Promise<void>) {
