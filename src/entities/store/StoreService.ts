@@ -118,8 +118,6 @@ export class StoreService {
   async dataTransaction(dataset: Dataset, fn: (helpers: Helpers) => Promise<void>) {
     await this.em.transactional(async _em => {
       const instance = this.getStoreInstance(await dataset.store.load());
-      const knex = instance.getKnex(_em);
-      // await knex.raw('SET commit_delay TO 400;');
       try {
         await instance.tableExists(_em);
         await instance.dropIndices();

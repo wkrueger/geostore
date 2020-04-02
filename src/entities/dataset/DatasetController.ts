@@ -35,9 +35,8 @@ export class DatasetController {
     const storeCode: string = request.body.storeCode;
     const storeId: number = Number(request.body.storeId);
     if (!storeCode && !storeId) throw error('BAD_REQUEST', 'store parameter missing.');
-    const store = await this.storeRepo.findOne(
-      filterWhereObject({ code: storeCode, id: storeId || undefined }),
-    );
+    const query = filterWhereObject({ code: storeCode, id: storeId || undefined });
+    const store = await this.storeRepo.findOne(query);
     if (!store) throw error('STORE_NOT_FOUND', 'Store with this code not found.');
     if (!request.media) {
       throw error('UPLOAD_FAILED', 'Upload failed.');

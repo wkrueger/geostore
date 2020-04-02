@@ -21,12 +21,12 @@ export class StoreInstance {
     const knex = this.getKnex(em);
     await knex.schema.createTable(this.tableName, table => {
       table.increments();
-      table.specificType('geometry', 'geometry');
+      (table as any).specificType('geometry', 'geometry').index(null, 'GIST');
       table.jsonb('properties');
       table
         .integer('datasetId')
         .references('dataset.id')
-        // .index()
+        .index()
         .onDelete('CASCADE');
     });
   }
