@@ -92,7 +92,6 @@ export class DatasetCreateWorker {
         start: data.start,
         end: data.end,
         async iterator(lines) {
-          console.log('iterator', lines.length);
           lines = lines.map(line => {
             let geom: any;
             let properties = {};
