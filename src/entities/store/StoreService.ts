@@ -94,6 +94,12 @@ export class StoreService {
         intersectsGeometry
           ? knex.raw('ST_AsGeoJSON(ST_Intersection(geometry, ?)) AS geometry', intersectsGeometry)
           : knex.raw('ST_ASGeoJSON(geometry) AS geometry'),
+        intersectsGeometry
+          ? knex.raw(
+              'ST_Area(ST_GeogFromWkb(ST_Intersection(geometry, ?))) AS area',
+              intersectsGeometry,
+            )
+          : knex.raw('ST_Area(ST_GeogFromWkb(geometry)) AS area'),
       )
       .limit(limit || 100);
     if (offset) {
@@ -105,7 +111,9 @@ export class StoreService {
     let results: any[] = await query;
     results = results.map(result => {
       const geometry = JSON.parse(result.geometry);
-      (result.properties || {}).dataset = datasetId;
+      result.properties = result.properties || {};
+      result.properties._dataset = datasetId;
+      result.properties._area = result.area;
       return {
         type: 'Feature',
         geometry,
