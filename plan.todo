@@ -14,10 +14,12 @@ Must have:
   - swagger
   
 Issues:
-  - Dataset -> store delete cascade
-  - Validate "code" format
-  - Validation error responses bad
-  - Save geography, not geometry
+  ☐ Dataset -> store delete cascade
+  ☐ Validate "code" format
+  ☐ Validation error responses bad
+  ☐ Save geography, not geometry
+  ☐ Media upload bad
+  ☐ Upload % indicator bad
 
 Fixme other:
   - Swagger - optional query params
