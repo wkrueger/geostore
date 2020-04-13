@@ -1,11 +1,11 @@
 import { Migration } from 'mikro-orm';
 
-export class Migration20200402050808 extends Migration {
+export class Migration20200413024400 extends Migration {
 
   async up(): Promise<void> {
-    this.addSql('create table "dataset" ("id" serial primary key, "store_id" int4 not null, "operation_id" int4 null, "media_id" varchar(255) not null, "created_at" timestamptz(0) not null, "extent" varchar(255) null, "notes" varchar(255) null);');
+    this.addSql('create table "dataset" ("id" serial primary key, "store_id" int4 not null, "operation_id" int4 null, "media_uuid" varchar(255) null, "created_at" timestamptz(0) not null, "extent" varchar(255) null, "notes" varchar(255) null);');
     this.addSql('alter table "dataset" add constraint "dataset_operation_id_unique" unique ("operation_id");');
-    this.addSql('alter table "dataset" add constraint "dataset_media_id_unique" unique ("media_id");');
+    this.addSql('alter table "dataset" add constraint "dataset_media_uuid_unique" unique ("media_uuid");');
 
     this.addSql('create table "media" ("uuid" varchar(255) not null, "extension" varchar(255) not null);');
     this.addSql('alter table "media" add constraint "media_pkey" primary key ("uuid");');
@@ -23,7 +23,7 @@ export class Migration20200402050808 extends Migration {
 
     this.addSql('alter table "dataset" add constraint "dataset_store_id_foreign" foreign key ("store_id") references "store" ("id") on update cascade;');
     this.addSql('alter table "dataset" add constraint "dataset_operation_id_foreign" foreign key ("operation_id") references "operation" ("id") on update cascade on delete cascade;');
-    this.addSql('alter table "dataset" add constraint "dataset_media_id_foreign" foreign key ("media_id") references "media" ("uuid") on update cascade;');
+    this.addSql('alter table "dataset" add constraint "dataset_media_uuid_foreign" foreign key ("media_uuid") references "media" ("uuid") on update cascade on delete set null;');
 
     this.addSql('alter table "mapfile_layer" add constraint "mapfile_layer_mapfile_id_foreign" foreign key ("mapfile_id") references "mapfile" ("id") on update cascade on delete cascade;');
     this.addSql('alter table "mapfile_layer" add constraint "mapfile_layer_dataset_id_foreign" foreign key ("dataset_id") references "dataset" ("id") on update cascade on delete set null;');

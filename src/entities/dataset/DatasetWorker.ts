@@ -44,7 +44,7 @@ export class DatasetCreateWorker {
     const found = await this.datasetRepo.findOne({ id: data.datasetId });
     if (!found) throw error('NOT_FOUND', 'Dataset not found.');
 
-    const media = await found.media.load();
+    const media = await found.media!.load();
     const reader = new GpkgReader(media.getAbsFilePath());
     const datasetSize = reader.getSize();
     reader.finished();
@@ -85,7 +85,7 @@ export class DatasetCreateWorker {
     if (!found) throw error('NOT_FOUND', 'Dataset not found.');
 
     let done = 0;
-    const media = await found.media.load();
+    const media = await found.media!.load();
     const reader = new GpkgReader(media.getAbsFilePath());
     await this.storeSvc.dataTransaction(found, async helper => {
       await reader.read({

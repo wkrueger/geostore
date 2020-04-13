@@ -25,7 +25,7 @@ export class Dataset {
   operation!: IdentifiedReference<Operation>;
 
   @OneToOne()
-  media!: IdentifiedReference<Media, 'uuid'>;
+  media?: IdentifiedReference<Media, 'uuid'>;
 
   @Property({ onCreate: () => new Date() })
   createdAt!: Date;
