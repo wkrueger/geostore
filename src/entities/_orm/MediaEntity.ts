@@ -10,8 +10,14 @@ export class Media implements UuidEntity<any> {
   @Property()
   extension!: string;
 
+  @Property()
+  absPath?: string;
+
   getAbsFilePath() {
     const ctx = getContext();
+    if (this.absPath) {
+      return this.absPath;
+    }
     return ctx.pathFromRoot('media', this.uuid + '.' + this.extension);
   }
 }
