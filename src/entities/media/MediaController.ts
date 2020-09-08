@@ -1,4 +1,4 @@
-import { Controller, Post, Req, Body } from '@nestjs/common'
+import { Controller, Post, Req, Body, Get } from '@nestjs/common'
 import { ApiTags, ApiOperation } from '@nestjs/swagger'
 import { error } from '../../_other/error'
 import { trimDocs } from '../../_other/trimDocs'
@@ -8,8 +8,9 @@ import { MediaService } from './MediaService'
 @ApiTags('media')
 @Controller('media')
 export class MediaController {
-  constructor(private mediaSvc: MediaService) {}
+  constructor(private mediaSvc: MediaService) { }
 
+  // post media (multipart)
   @ApiOperation({
     description: trimDocs(`
       Send the package as multipart on field "file".
@@ -23,6 +24,7 @@ export class MediaController {
     return request.media
   }
 
+  // media link
   @ApiOperation({
     description: trimDocs(`
       Links an already existing geopackage into the media store.
@@ -32,5 +34,11 @@ export class MediaController {
   async link(@Body() body: LinkMediaDto) {
     const media = await this.mediaSvc.link({ absPath: body.absPath })
     return media
+  }
+
+  // list media
+  @Get()
+  async list() {
+    return this.mediaSvc.mediaRepo.find({})
   }
 }

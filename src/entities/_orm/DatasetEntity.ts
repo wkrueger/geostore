@@ -1,6 +1,6 @@
-import { Store } from './StoreEntity';
-import { Operation } from './OperationEntity';
-import { Media } from './MediaEntity';
+import { Store } from './StoreEntity'
+import { Operation } from './OperationEntity'
+import { Media } from './MediaEntity'
 import {
   Entity,
   PrimaryKey,
@@ -9,30 +9,34 @@ import {
   Property,
   Cascade,
   IdentifiedReference,
-} from 'mikro-orm';
+  OneToMany,
+} from 'mikro-orm'
 
 @Entity()
 export class Dataset {
-  static DEFAULT_EXTENT = [-74, -34, -28, 6];
+  static DEFAULT_EXTENT = [-74, -34, -28, 6]
 
   @PrimaryKey()
-  id!: number;
+  id!: number
 
   @ManyToOne()
-  store!: IdentifiedReference<Store>;
+  store!: IdentifiedReference<Store>
 
   @OneToOne({ cascade: [Cascade.ALL] })
-  operation!: IdentifiedReference<Operation>;
+  operation!: IdentifiedReference<Operation>
 
-  @OneToOne()
-  media?: IdentifiedReference<Media, 'uuid'>;
+  @ManyToOne({})
+  media?: IdentifiedReference<Media, 'uuid'>
 
   @Property({ onCreate: () => new Date() })
-  createdAt!: Date;
+  createdAt!: Date
 
   @Property()
-  extent?: string;
+  sourceTable!: string
 
   @Property()
-  notes?: string;
+  extent?: string
+
+  @Property()
+  notes?: string
 }

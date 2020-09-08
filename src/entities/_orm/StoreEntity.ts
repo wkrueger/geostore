@@ -1,30 +1,29 @@
-import { Cascade, Entity, OneToMany, PrimaryKey, Property } from 'mikro-orm';
-import { Dataset } from './DatasetEntity';
+import { Cascade, Entity, OneToMany, PrimaryKey, Property, Collection } from 'mikro-orm'
+import { Dataset } from './DatasetEntity'
 
 @Entity()
 export class Store {
-  static DEFAULT_PROJECTION_CODE = 'epsg:4326';
+  static DEFAULT_PROJECTION_CODE = 'epsg:4326'
 
   constructor(partial: Partial<Store> = {}) {
-    Object.assign(this, partial);
+    Object.assign(this, partial)
   }
 
   @PrimaryKey()
-  id!: number;
+  id!: number
 
   @Property({ unique: true })
-  code!: string;
+  code!: string
 
   @Property()
-  label!: string;
+  label!: string
 
   @Property({ default: `'${Store.DEFAULT_PROJECTION_CODE}'` })
-  projectionCode?: string;
+  projectionCode?: string
 
   @OneToMany(
     () => Dataset,
     dataset => dataset.store,
-    { cascade: [Cascade.ALL] },
   )
-  datasets: Dataset[] = [];
+  datasets = new Collection<Dataset>(this)
 }

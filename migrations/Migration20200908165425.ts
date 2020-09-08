@@ -1,13 +1,12 @@
 import { Migration } from 'mikro-orm';
 
-export class Migration20200413024400 extends Migration {
+export class Migration20200908165425 extends Migration {
 
   async up(): Promise<void> {
-    this.addSql('create table "dataset" ("id" serial primary key, "store_id" int4 not null, "operation_id" int4 null, "media_uuid" varchar(255) null, "created_at" timestamptz(0) not null, "extent" varchar(255) null, "notes" varchar(255) null);');
+    this.addSql('create table "dataset" ("id" serial primary key, "store_id" int4 not null, "operation_id" int4 null, "media_uuid" varchar(255) null, "created_at" timestamptz(0) not null, "source_table" varchar(255) not null, "extent" varchar(255) null, "notes" varchar(255) null);');
     this.addSql('alter table "dataset" add constraint "dataset_operation_id_unique" unique ("operation_id");');
-    this.addSql('alter table "dataset" add constraint "dataset_media_uuid_unique" unique ("media_uuid");');
 
-    this.addSql('create table "media" ("uuid" varchar(255) not null, "extension" varchar(255) not null);');
+    this.addSql('create table "media" ("uuid" varchar(255) not null, "extension" varchar(255) not null, "abs_path" varchar(255) null);');
     this.addSql('alter table "media" add constraint "media_pkey" primary key ("uuid");');
 
     this.addSql('create table "operation" ("id" serial primary key, "state" int2 not null, "progress" float not null default 0, "message" varchar(255) null, "created_at" timestamptz(0) not null, "updated_at" timestamptz(0) not null, "info" json null);');

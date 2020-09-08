@@ -1,73 +1,72 @@
-import sqlite from 'better-sqlite3';
+import sqlite from 'better-sqlite3'
 
 export class GpkgReader {
   constructor(public absFilePath: string) {}
-  private conn = new sqlite(this.absFilePath);
+  private conn = new sqlite(this.absFilePath)
 
-  selectSource() {
-    const selectedSource: { table_name } = this.conn.prepare('SELECT * FROM gpkg_contents;').get();
-    return selectedSource;
+  getTables() {
+    const sources = this.conn.prepare('SELECT table_name FROM gpkg_contents;').all()
+    const allTables: string[] = sources.map(x => x.table_name)
+    return allTables
   }
 
-  getSize() {
-    const selectedSource = this.selectSource();
-    const sizeQuery = this.conn.prepare(
-      `SELECT COUNT(*) AS nlines FROM ${selectedSource.table_name}`,
-    );
-    const resp = sizeQuery.get();
-    const count = resp.nlines;
-    return count;
+  getSize(tableName: string) {
+    if (!tableName) throw Error('tableName is required.')
+    const sizeQuery = this.conn.prepare(`SELECT COUNT(*) AS nlines FROM ${tableName}`)
+    const resp = sizeQuery.get()
+    return resp.nlines
   }
 
   async read({
     iterator,
+    tableName,
     start,
     end,
   }: {
-    iterator: (i: any[], count: number) => Promise<void>;
-    start: number;
-    end: number;
+    iterator: (i: any[], count: number, tableName: string) => Promise<void>
+    tableName: string
+    start: number
+    end: number
   }) {
     // fixme: binding did not work on table name
     // const queue = new Queue(10);
 
-    const selectedSource = this.selectSource();
-    const count = end - start;
+    const count = end - start
     const cursor = this.conn.prepare(
-      `SELECT * FROM ${selectedSource.table_name} LIMIT ${end - start} OFFSET ${start}`,
-    );
-    const all = cursor.all();
+      `SELECT * FROM ${tableName} LIMIT ${end - start} OFFSET ${start}`,
+    )
+    const all = cursor.all()
     for (const chunk of all) {
-      const geomUint = chunk.geom;
-      const geomBuffer = Buffer.from(geomUint);
-      const stripped = this.stripHeader(geomBuffer);
-      chunk.geom = stripped; //wkx.Geometry.parse(stripped);
+      const geomUint = chunk.geom
+      const geomBuffer = Buffer.from(geomUint)
+      const stripped = this.stripHeader(geomBuffer)
+      chunk.geom = stripped //wkx.Geometry.parse(stripped);
     }
-    let sliceStart = 0;
-    let slice = all.slice(sliceStart, sliceStart + 200);
+    let sliceStart = 0
+    let slice = all.slice(sliceStart, sliceStart + 200)
     while (slice.length) {
-      await iterator(slice, count);
-      sliceStart += 200;
-      slice = all.slice(sliceStart, sliceStart + 200);
+      await iterator(slice, count, tableName)
+      sliceStart += 200
+      slice = all.slice(sliceStart, sliceStart + 200)
     }
   }
 
   finished() {
-    this.conn.close();
+    this.conn.close()
   }
 
   private getBit(nr: number, byte: number) {
-    let bt = (nr >> byte) & 1;
-    return bt;
+    let bt = (nr >> byte) & 1
+    return bt
   }
 
   private getInt(src: number[]) {
-    let out = 0;
+    let out = 0
     for (let x = 0; x < src.length; x++) {
-      const bit = src[x];
-      if (bit) out += 2 ** x;
+      const bit = src[x]
+      if (bit) out += 2 ** x
     }
-    return out;
+    return out
   }
 
   private stripHeader(src: Buffer) {
@@ -76,19 +75,19 @@ export class GpkgReader {
     // flags: 3
     // srsid: 4 - 35
     // envelope: variable
-    const flags = src[3];
-    let bits = [...Array(8).keys()].map(x => this.getBit(flags, x)).reverse();
-    let slice = bits.slice(4, 7).reverse();
-    let contents = this.getInt(slice);
+    const flags = src[3]
+    let bits = [...Array(8).keys()].map(x => this.getBit(flags, x)).reverse()
+    let slice = bits.slice(4, 7).reverse()
+    let contents = this.getInt(slice)
     const sizemap = {
       0: 0,
       1: 32,
       2: 48,
       3: 48,
       4: 64,
-    };
-    const envsize = sizemap[contents];
-    return src.slice(8 + envsize);
+    }
+    const envsize = sizemap[contents]
+    return src.slice(8 + envsize)
   }
 }
 

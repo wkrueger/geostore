@@ -13,7 +13,7 @@ import { Media } from '../_orm/MediaEntity'
 
 @Injectable()
 export class MediaService {
-  constructor(@InjectRepository(Media) private mediaRepo: EntityRepository<Media>) {}
+  constructor(@InjectRepository(Media) public mediaRepo: EntityRepository<Media>) { }
 
   async create(i: { stream: fs.ReadStream; fileName: string }) {
     let ext = path.parse(i.fileName).ext.substr(1)
@@ -23,7 +23,7 @@ export class MediaService {
     const record = new Media()
     record.uuid = v4()
     record.extension = ext
-    await this.mediaRepo.persist(record)
+    await this.mediaRepo.persistAndFlush(record)
     // await record.reload();
 
     const ctx = getContext()
@@ -47,7 +47,7 @@ export class MediaService {
     record.uuid = v4()
     record.extension = ext
     record.absPath = i.absPath
-    await this.mediaRepo.persist(record)
+    await this.mediaRepo.persistAndFlush(record)
     return record
   }
 
