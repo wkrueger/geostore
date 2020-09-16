@@ -1,5 +1,7 @@
 # geostore
 
+side-project for geographic data helpers
+
 Objectives (wip)
 
 - Upload geometry files into PostGIS
